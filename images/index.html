@@ -35,10 +35,16 @@
 
         <div class="right-column">
             <div class="section">
-                <h2>Blocks</h2>
-                <button onclick="createImageBlock()">Create Image Block</button>
-                <button onclick="createGalleryBlock()">Create Gallery Block</button>
-                <button onclick="clearAllData()" class="clear-all-btn">Clear All Data</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div class="create-page-controls">
+                        <h2 style="margin: 0;">Create Blocks</h2>
+                        <div class="create-page-buttons">
+                            <button onclick="createImageBlock()">Create Image Block</button>
+                            <button onclick="createGalleryBlock()">Create Gallery Block</button>
+                        </div>
+                    </div>
+                    <button onclick="clearAllData()" class="clear-all-btn">Clear All Images</button>
+                </div>
             </div>
 
             <div id="blocksContainer" class="blocks-container"></div>

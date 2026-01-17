@@ -25,11 +25,14 @@
 
         <div class="right-column">
             <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0;">Video Blocks</h2>
-                    <button onclick="clearAllData()" class="delete-btn">Clear All Data</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div class="create-page-controls">
+                        <h2 style="margin: 0;">Video Blocks</h2>
+                    </div>
+                    <button onclick="clearAllData()" class="clear-all-btn">Clear All Videos</button>
                 </div>
             </div>
+
             <div id="videosContainer" class="blocks-container"></div>
             <div id="emptyState" style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
                 <p>No videos loaded yet.</p>

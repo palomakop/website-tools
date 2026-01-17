@@ -1147,7 +1147,7 @@ button.clear-all-btn {
     flex-wrap: wrap;
 }
 
-.create-page-buttons button {
+.create-page-buttons button, .clear-all-btn {
     margin-top: 0;
     margin-right: 0;
 }
