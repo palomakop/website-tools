@@ -415,7 +415,7 @@ function renderImageEditor(page) {
                        oninput="updateField('${page.id}', 'customStyle.bgImage', this.value)"
                        placeholder="https://...">
             </div>
-            <button onclick="loadImagePreview('${page.id}')">Load Image</button>
+            <button onclick="loadImagePreview('${page.id}')" style="margin-bottom:8px;">Load Image</button>
             <div class="field-group">
                 <label>Opacity (0-1)</label>
                 <input type="number"
@@ -716,7 +716,12 @@ function openColorPicker(pageId, field, currentColor, stopIndex, evt) {
     picker.id = pickerId;
     picker.innerHTML = `
         <div class="color-picker-header">
-            <div class="color-picker-current">${currentColor}</div>
+            <input type="text"
+                   class="hex-input"
+                   id="hexInput-${pickerId}"
+                   value="${currentColor}"
+                   maxlength="7"
+                   placeholder="#000000">
         </div>
         <div class="color-picker-body">
             <div class="color-xy-pad" id="xyPad-${pickerId}">
@@ -761,11 +766,11 @@ function updateColorPreviewInDOM(pageId, field, stopIndex, newColor) {
     const card = document.querySelector(`[data-page-id="${pageId}"]`);
     if (!card) return;
 
-    // Update the color display in the picker itself
+    // Update the hex input in the picker itself
     const picker = document.getElementById(currentPickerId);
     if (picker) {
-        const currentColorEl = picker.querySelector('.color-picker-current');
-        if (currentColorEl) currentColorEl.textContent = newColor;
+        const hexInput = picker.querySelector('.hex-input');
+        if (hexInput) hexInput.value = newColor;
     }
 
     // Find and update the color preview square that was clicked to open this picker
@@ -851,6 +856,57 @@ function attachColorPickerListeners(pickerId) {
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
     });
+
+    // Hex Input Field
+    const hexInput = document.getElementById(`hexInput-${pickerId}`);
+    if (hexInput) {
+        const handleHexInput = () => {
+            let value = hexInput.value.trim();
+
+            // Add # if missing
+            if (value && !value.startsWith('#')) {
+                value = '#' + value;
+            }
+
+            // Validate hex format
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                const rgb = hexToRgb(value);
+                const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+                // Update color picker state
+                currentHue = hsb.h;
+                currentSat = hsb.s;
+                currentBrightness = hsb.b;
+
+                // Update UI
+                updateXYPadBackground(pickerId);
+                updateXYCursorPosition(pickerId);
+                updateHueThumbPosition(pickerId);
+                document.getElementById(`hueValue-${pickerId}`).textContent = Math.round(currentHue);
+
+                // Call the callback to update the page
+                if (currentColorPickerCallback) {
+                    currentColorPickerCallback(value);
+                }
+            }
+        };
+
+        // Update on Enter key
+        hexInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleHexInput();
+                hexInput.blur();
+            }
+        });
+
+        // Update on blur (when clicking away)
+        hexInput.addEventListener('blur', handleHexInput);
+
+        // Select all on focus for easy replacement
+        hexInput.addEventListener('focus', (e) => {
+            e.target.select();
+        });
+    }
 }
 
 function updateSatBrightFromXY(e, xyPad, pickerId) {
@@ -918,6 +974,12 @@ function updateHueThumbPosition(pickerId) {
 function updateColorFromHSB(pickerId) {
     const rgb = hsbToRgb(currentHue, currentSat, currentBrightness);
     const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+
+    // Update hex input field
+    const hexInput = document.getElementById(`hexInput-${pickerId}`);
+    if (hexInput) {
+        hexInput.value = hex;
+    }
 
     if (currentColorPickerCallback) {
         currentColorPickerCallback(hex);
@@ -1217,7 +1279,8 @@ function setupGradientStopDragHandlers() {
             // Determine if we should drop before or after
             const rect = target.getBoundingClientRect();
             const midpoint = rect.top + rect.height / 2;
-            const dropBefore = e.clientY < midpoint;
+            // Since display order is reversed (bottom to top), invert the dropBefore logic
+            const dropBefore = e.clientY >= midpoint;
 
             // Remove the dragged item
             const [movedStop] = stops.splice(draggedStopIndex, 1);

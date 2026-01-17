@@ -1498,10 +1498,27 @@ button.clear-all-btn:hover {
     margin-bottom: 10px;
 }
 
-.color-picker-current {
+.hex-input {
+    width: 100%;
+    padding: 6px 8px;
     font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
     font-size: 14px;
     font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    text-align: center;
+    transition: border-color 0.15s ease;
+}
+
+.hex-input:focus {
+    outline: none;
+    border-color: var(--color-blue-light);
+}
+
+.hex-input::selection {
+    background: var(--color-blue-light);
     color: var(--text-primary);
 }
 
