@@ -14,16 +14,16 @@ class WebsiteNav extends HTMLElement {
         this.innerHTML = `
             <nav class="site-nav">
                 <div class="nav-container">
-                    <a href="/" class="nav-title ${isRoot ? 'active' : ''}">website tools</a>
+                    <a href="/" class="nav-title ${isRoot ? 'active' : ''}">Website Tools</a>
                     <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
                         <span></span>
                         <span></span>
                         <span></span>
                     </button>
                     <div class="nav-links">
-                        <a href="/images/" class="nav-link ${isImages ? 'active' : ''}">images</a>
-                        <a href="/videos/" class="nav-link ${isVideos ? 'active' : ''}">videos</a>
-                        <a href="/frontmatter/" class="nav-link ${isFrontmatter ? 'active' : ''}">frontmatter</a>
+                        <a href="/images/" class="nav-link ${isImages ? 'active' : ''}">Images</a>
+                        <a href="/videos/" class="nav-link ${isVideos ? 'active' : ''}">Videos</a>
+                        <a href="/frontmatter/" class="nav-link ${isFrontmatter ? 'active' : ''}">Frontmatter</a>
                     </div>
                 </div>
                 <div class="nav-drawer" id="navDrawer">
@@ -34,9 +34,9 @@ class WebsiteNav extends HTMLElement {
                             <button class="nav-drawer-close" id="navDrawerClose" aria-label="Close menu">×</button>
                         </div>
                         <div class="nav-drawer-links">
-                            <a href="/images/" class="nav-drawer-link ${isImages ? 'active' : ''}">🖼️ Images</a>
-                            <a href="/videos/" class="nav-drawer-link ${isVideos ? 'active' : ''}">📺 Videos</a>
-                            <a href="/frontmatter/" class="nav-drawer-link ${isFrontmatter ? 'active' : ''}">📝 Frontmatter</a>
+                            <a href="/images/" class="nav-drawer-link ${isImages ? 'active' : ''}">Images</a>
+                            <a href="/videos/" class="nav-drawer-link ${isVideos ? 'active' : ''}">Videos</a>
+                            <a href="/frontmatter/" class="nav-drawer-link ${isFrontmatter ? 'active' : ''}">Frontmatter</a>
                         </div>
                     </div>
                 </div>
