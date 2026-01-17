@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📺 Videos</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="../nav.js"></script>
+</head>
+<body>
+    <website-nav></website-nav>
+    <div class="main-container">
+        <div class="left-column" id="leftColumn">
+            <div class="resize-handle" id="resizeHandle"></div>
+
+            <div class="section-scroll">
+                <div class="section">
+                    <h2>Video Data</h2>
+                    <textarea id="tsvInput" placeholder="Paste row from video spreadsheet here..." style="height: 120px;"></textarea>
+                    <div id="errorMessage" style="display: none; margin-top: 8px; padding: 8px; background: var(--bg-invalid); border: 1px solid var(--color-red-light); border-radius: 3px; font-size: 12px; color: var(--color-red-light);"></div>
+                    <button onclick="loadVideoData()">Load Video Data</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0;">Video Blocks</h2>
+                    <button onclick="clearAllData()" class="delete-btn">Clear All Data</button>
+                </div>
+            </div>
+            <div id="videosContainer" class="blocks-container"></div>
+            <div id="emptyState" style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
+                <p>No videos loaded yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="videos.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖼️ Images</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="../nav.js"></script>
+</head>
+<body>
+    <website-nav></website-nav>
+    <div class="main-container">
+        <div class="left-column" id="leftColumn">
+            <div class="resize-handle" id="resizeHandle"></div>
+
+            <div class="section-scroll">
+                <div class="section">
+                    <h2>Image URLs</h2>
+                    <textarea id="urlInput" placeholder="Paste image URLs (one per line)..."></textarea>
+                    <button onclick="loadImages()">Load Images</button>
+                </div>
+
+                <div class="section">
+                    <h2>Staging Area</h2>
+                    <div id="stagingArea" class="staging-area"></div>
+                    <div id="selectionActions" class="selection-actions">
+                        <div class="selection-count"><span id="selectionCount">0</span> image(s) selected</div>
+                        <button id="createImageFromSelection" onclick="createImageBlockFromSelection()" class="hidden">Create Image Block</button>
+                        <button id="createGalleryFromSelection" onclick="createGalleryBlockFromSelection()" class="hidden">Create Gallery Block</button>
+                        <button onclick="clearSelection()">Clear Selection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="section">
+                <h2>Blocks</h2>
+                <button onclick="createImageBlock()">Create Image Block</button>
+                <button onclick="createGalleryBlock()">Create Gallery Block</button>
+                <button onclick="clearAllData()" class="clear-all-btn">Clear All Data</button>
+            </div>
+
+            <div id="blocksContainer" class="blocks-container"></div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu"></div>
+
+    <!-- Alt Text Modal -->
+    <div id="altTextModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Edit Alt Text</div>
+                <button class="modal-close" onclick="closeAltTextModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <img id="modalImage" src="" alt="">
+                </div>
+                <div class="modal-input-group">
+                    <label for="modalAltText">Alt Text / Description</label>
+                    <textarea id="modalAltText" rows="3" placeholder="Enter a description for this image..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="previousImage()">← Previous</button>
+                <button onclick="nextImage()" class="ml-auto">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="images.js"></script>
+</body>
+</html>

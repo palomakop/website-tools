@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 Frontmatter</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="../nav.js"></script>
+</head>
+<body>
+    <website-nav></website-nav>
+    <div class="main-container frontmatter-container">
+        <div class="frontmatter-content">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div class="create-page-controls">
+                        <h2 style="margin: 0;">Create New Page</h2>
+                        <div class="create-page-buttons">
+                            <button onclick="createFromTemplate('blog')">Blog Post</button>
+                            <button onclick="createFromTemplate('artwork')">Artwork</button>
+                            <button onclick="createFromTemplate('notes')">Notes Page</button>
+                        </div>
+                    </div>
+                    <button onclick="clearAllData()" class="delete-btn">Clear All Data</button>
+                </div>
+            </div>
+            <div id="editorsContainer" class="blocks-container"></div>
+            <div id="emptyState" style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
+                <p>No pages created yet. Select a template to get started.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="frontmatter.js"></script>
+</body>
+</html>
