@@ -44,6 +44,7 @@ const TEMPLATES = {
         title: '',
         description: '',
         lightbox: false,
+        dark: false,
         thumbnail: '',
         customStyle: {
             enabled: true,
@@ -108,7 +109,7 @@ function createFromTemplate(type) {
 
     colorIndex = (colorIndex + 1) % BORDER_COLORS.length;
 
-    pages.push(page);
+    pages.unshift(page);
     saveToLocalStorage();
     renderAllPages();
 }
@@ -223,6 +224,7 @@ function renderFieldsForType(page) {
             fields.push(renderTextField(page, 'title', 'Title'));
             fields.push(renderTextField(page, 'description', 'Description'));
             fields.push(renderBooleanField(page, 'lightbox', 'Lightbox'));
+            fields.push(renderBooleanField(page, 'dark', 'Dark Mode'));
             fields.push(renderTextField(page, 'thumbnail', 'Thumbnail URL'));
             fields.push(renderCustomStyleField(page));
             if (page.data.customStyle && page.data.customStyle.enabled) {
@@ -313,8 +315,10 @@ function renderCustomStyleField(page) {
 
     return `
         <div class="field-group custom-style-field">
-            <label>Custom Style</label>
-            <button class="delete-btn" style="font-size: 11px; padding: 3px 8px;" onclick="disableCustomStyle('${page.id}')">Remove</button>
+            <div class="custom-style-header">
+                <label>Custom Style</label>
+                <button class="delete-btn" style="font-size: 11px; padding: 3px 8px 5px 8px;" onclick="disableCustomStyle('${page.id}')">Remove</button>
+            </div>
 
             <div class="style-type-selector">
                 <select onchange="updateStyleType('${page.id}', this.value)">
@@ -364,21 +368,31 @@ function renderGradientEditor(page) {
     const stops = page.data.customStyle.gradientStops || ['#d5dcdf', '#dddddd', '#d0dada'];
     const gradientCSS = `radial-gradient(${stops.join(', ')})`;
 
+    // Display stops in reverse order (outer to inner) for more intuitive editing
+    const stopsReversed = [...stops].reverse();
+
     return `
         <div class="style-editor">
             <div class="gradient-preview" style="background: ${gradientCSS};"></div>
             <div class="gradient-stops" id="gradient-stops-${page.id}">
-                ${stops.map((color, idx) => `
-                    <div class="gradient-stop-row">
-                        <span class="stop-label">Stop ${idx + 1}</span>
+                ${stopsReversed.map((color, displayIdx) => {
+                    const actualIdx = stops.length - 1 - displayIdx; // Map back to actual array index
+                    return `
+                    <div class="gradient-stop-row" draggable="true" data-page-id="${page.id}" data-stop-index="${actualIdx}">
                         <div class="color-preview"
                              style="background-color: ${color};"
-                             onclick="event.stopPropagation(); openColorPicker('${page.id}', 'gradientStop', '${color}', ${idx}, event)">
+                             onclick="event.stopPropagation(); openColorPicker('${page.id}', 'gradientStop', '${color}', ${actualIdx}, event)">
                         </div>
                         <span class="color-value">${color}</span>
-                        ${stops.length > 2 ? `<button class="delete-btn" style="font-size: 10px; padding: 2px 6px;" onclick="event.stopPropagation(); removeGradientStop('${page.id}', ${idx})">×</button>` : ''}
+                        ${stops.length > 2 ? `
+                            <button class="gradient-stop-remove" onclick="event.stopPropagation(); removeGradientStop('${page.id}', ${actualIdx})">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        ` : ''}
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
             <button onclick="addGradientStop('${page.id}')">Add Color Stop</button>
         </div>
@@ -388,16 +402,20 @@ function renderGradientEditor(page) {
 function renderImageEditor(page) {
     const bgImage = page.data.customStyle.bgImage || '';
     const opacity = page.data.customStyle.bgImageOpacity !== undefined ? page.data.customStyle.bgImageOpacity : 1.0;
+    const imageLoaded = page.data.customStyle.imageLoaded || false;
 
     return `
         <div class="style-editor">
+            <div class="image-preview-container" id="image-preview-${page.id}" style="background-image: ${imageLoaded && bgImage ? `url(${bgImage})` : 'none'}; opacity: ${opacity};"></div>
             <div class="field-group">
                 <label>Image URL</label>
                 <input type="text"
+                       id="image-url-${page.id}"
                        value="${bgImage}"
                        oninput="updateField('${page.id}', 'customStyle.bgImage', this.value)"
                        placeholder="https://...">
             </div>
+            <button onclick="loadImagePreview('${page.id}')">Load Image</button>
             <div class="field-group">
                 <label>Opacity (0-1)</label>
                 <input type="number"
@@ -405,10 +423,9 @@ function renderImageEditor(page) {
                        min="0"
                        max="1"
                        step="0.1"
-                       oninput="updateField('${page.id}', 'customStyle.bgImageOpacity', parseFloat(this.value))"
+                       oninput="updateImageOpacity('${page.id}', parseFloat(this.value))"
                        placeholder="1.0">
             </div>
-            ${bgImage ? `<div class="image-preview"><img src="${bgImage}" alt="Background preview" style="max-width: 200px; border-radius: 3px;"></div>` : ''}
         </div>
     `;
 }
@@ -449,6 +466,16 @@ function updateField(pageId, fieldPath, value) {
 
     target[parts[parts.length - 1]] = value;
 
+    // Special case: when enabling dark mode on notes page, default notecardDark to true
+    if (fieldPath === 'dark' && value === true && page.type === 'notes') {
+        if (page.data.notecardDark === undefined || page.data.notecardDark === false) {
+            page.data.notecardDark = true;
+            if (!page.data.notecardTextColor) {
+                page.data.notecardTextColor = '#f2f2f2';
+            }
+        }
+    }
+
     // Special case: when enabling notecardDark, ensure notecardTextColor exists
     if (fieldPath === 'notecardDark' && value === true) {
         if (!page.data.notecardTextColor) {
@@ -460,7 +487,7 @@ function updateField(pageId, fieldPath, value) {
     updatePageOutput(pageId);
 
     // Re-render to show/hide conditional fields
-    if (fieldPath === 'notecardDark') {
+    if (fieldPath === 'notecardDark' || fieldPath === 'dark') {
         renderAllPages();
     }
 }
@@ -578,6 +605,49 @@ function removeGradientStop(pageId, index) {
     page.data.customStyle.gradientStops.splice(index, 1);
     saveToLocalStorage();
     renderAllPages();
+}
+
+function loadImagePreview(pageId) {
+    const page = pages.find(p => p.id === pageId);
+    if (!page) return;
+
+    const imageUrl = page.data.customStyle.bgImage;
+    if (!imageUrl) {
+        alert('Please enter an image URL first');
+        return;
+    }
+
+    // Test if the image can be loaded
+    const img = new Image();
+    img.onload = () => {
+        // Image loaded successfully
+        page.data.customStyle.imageLoaded = true;
+        const previewEl = document.getElementById(`image-preview-${pageId}`);
+        if (previewEl) {
+            previewEl.style.backgroundImage = `url(${imageUrl})`;
+        }
+        saveToLocalStorage();
+        updatePageOutput(pageId);
+    };
+    img.onerror = () => {
+        alert('Failed to load image. Please check the URL.');
+    };
+    img.src = imageUrl;
+}
+
+function updateImageOpacity(pageId, opacity) {
+    const page = pages.find(p => p.id === pageId);
+    if (!page) return;
+
+    page.data.customStyle.bgImageOpacity = opacity;
+
+    const previewEl = document.getElementById(`image-preview-${pageId}`);
+    if (previewEl) {
+        previewEl.style.opacity = opacity;
+    }
+
+    saveToLocalStorage();
+    updatePageOutput(pageId);
 }
 
 // ============================================================================
@@ -698,12 +768,43 @@ function updateColorPreviewInDOM(pageId, field, stopIndex, newColor) {
         if (currentColorEl) currentColorEl.textContent = newColor;
     }
 
-    // Update gradient preview in real-time if we're editing a gradient
-    if (field === 'gradientStop') {
+    // Find and update the color preview square that was clicked to open this picker
+    if (field === 'solidColor') {
+        // For solid colors, find the color preview in the solid color editor
+        const colorPreview = card.querySelector('.style-editor .color-preview-row .color-preview');
+        const colorValue = card.querySelector('.style-editor .color-preview-row .color-value');
+        if (colorPreview) colorPreview.style.backgroundColor = newColor;
+        if (colorValue) colorValue.textContent = newColor;
+    } else if (field === 'gradientStop') {
+        // For gradient stops, find the specific stop's color preview
+        const gradientStops = card.querySelector(`#gradient-stops-${pageId}`);
+        if (gradientStops) {
+            const stopRows = gradientStops.querySelectorAll('.gradient-stop-row');
+            if (stopRows[stopIndex]) {
+                const colorPreview = stopRows[stopIndex].querySelector('.color-preview');
+                const colorValue = stopRows[stopIndex].querySelector('.color-value');
+                if (colorPreview) colorPreview.style.backgroundColor = newColor;
+                if (colorValue) colorValue.textContent = newColor;
+            }
+        }
+        // Update gradient preview in real-time
         const gradientPreview = card.querySelector('.gradient-preview');
         if (gradientPreview && page.data.customStyle) {
             const stops = page.data.customStyle.gradientStops;
             gradientPreview.style.background = `radial-gradient(${stops.join(', ')})`;
+        }
+    } else if (field === 'notecardTextColor') {
+        // For notecard text color, find the color preview in the notecard text color field
+        const fieldGroups = card.querySelectorAll('.field-group');
+        for (let group of fieldGroups) {
+            const label = group.querySelector('label');
+            if (label && label.textContent.includes('Notecard Text Color')) {
+                const colorPreview = group.querySelector('.color-preview');
+                const colorValue = group.querySelector('.color-value');
+                if (colorPreview) colorPreview.style.backgroundColor = newColor;
+                if (colorValue) colorValue.textContent = newColor;
+                break;
+            }
         }
     }
 }
@@ -956,10 +1057,12 @@ function generateFrontmatter(page) {
 
             if (data.customStyle && data.customStyle.enabled) {
                 lines.push(generateNotecardStyleYAML(data.customStyle, data.notecardDark, data.notecardTextColor));
-                lines.push(generateCustomStyleYAML(data.customStyle));
+                const customStyleYAML = generateCustomStyleYAML(data.customStyle);
+                if (customStyleYAML) lines.push(customStyleYAML);
             }
 
             if (data.lightbox) lines.push(`lightbox: true`);
+            if (data.dark) lines.push(`dark: true`);
             if (data.thumbnail) lines.push(`thumbnail: ${quote(data.thumbnail)}`);
             if (data.notecardDark) lines.push(`notecardDark: true`);
             break;
@@ -1039,11 +1142,115 @@ function copyOutput(pageId, type) {
 }
 
 // ============================================================================
+// Gradient Stop Drag and Drop
+// ============================================================================
+
+let draggedStopElement = null;
+let draggedStopPageId = null;
+let draggedStopIndex = null;
+
+function setupGradientStopDragHandlers() {
+    document.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('gradient-stop-row')) {
+            draggedStopElement = e.target;
+            draggedStopPageId = e.target.dataset.pageId;
+            draggedStopIndex = parseInt(e.target.dataset.stopIndex);
+            e.target.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+    });
+
+    document.addEventListener('dragend', (e) => {
+        if (e.target.classList.contains('gradient-stop-row')) {
+            e.target.style.opacity = '';
+            draggedStopElement = null;
+            draggedStopPageId = null;
+            draggedStopIndex = null;
+            // Clear all drop indicators
+            document.querySelectorAll('.gradient-stop-row').forEach(row => {
+                row.classList.remove('drop-before', 'drop-after');
+            });
+        }
+    });
+
+    document.addEventListener('dragover', (e) => {
+        if (!draggedStopElement) return;
+
+        const target = e.target.closest('.gradient-stop-row');
+        if (target && target.dataset.pageId === draggedStopPageId) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            // Clear previous highlights
+            document.querySelectorAll('.gradient-stop-row').forEach(row => {
+                row.classList.remove('drop-before', 'drop-after');
+            });
+
+            // Don't highlight if it's the dragged element itself
+            if (target === draggedStopElement) return;
+
+            // Determine if we should drop before or after
+            const rect = target.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+
+            if (e.clientY < midpoint) {
+                target.classList.add('drop-before');
+            } else {
+                target.classList.add('drop-after');
+            }
+        }
+    });
+
+    document.addEventListener('drop', (e) => {
+        if (!draggedStopElement) return;
+
+        const target = e.target.closest('.gradient-stop-row');
+        if (target && target.dataset.pageId === draggedStopPageId && target !== draggedStopElement) {
+            e.preventDefault();
+
+            const page = pages.find(p => p.id === draggedStopPageId);
+            if (!page) return;
+
+            const stops = page.data.customStyle.gradientStops;
+            const targetIndex = parseInt(target.dataset.stopIndex);
+
+            // Determine if we should drop before or after
+            const rect = target.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            const dropBefore = e.clientY < midpoint;
+
+            // Remove the dragged item
+            const [movedStop] = stops.splice(draggedStopIndex, 1);
+
+            // Calculate new index
+            let newIndex = targetIndex;
+            if (draggedStopIndex < targetIndex) {
+                newIndex = dropBefore ? targetIndex - 1 : targetIndex;
+            } else {
+                newIndex = dropBefore ? targetIndex : targetIndex + 1;
+            }
+
+            // Insert at new position
+            stops.splice(newIndex, 0, movedStop);
+
+            saveToLocalStorage();
+            renderAllPages();
+        }
+
+        // Clear highlights
+        document.querySelectorAll('.gradient-stop-row').forEach(row => {
+            row.classList.remove('drop-before', 'drop-after');
+        });
+    });
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFromLocalStorage();
+    setupGradientStopDragHandlers();
 
     // Close color picker when clicking outside (but not when just releasing a drag)
     document.addEventListener('mousedown', (e) => {
