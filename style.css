@@ -368,12 +368,11 @@ button {
     background: var(--color-blue);
     color: var(--text-primary);
     border: none;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 3px;
     cursor: pointer;
     font-size: 12px;
-    margin-right: 6px;
-    margin-top: 6px;
+    margin:4px 4px 4px 0;
     font-weight: 500;
 }
 
@@ -383,10 +382,6 @@ button:hover {
 
 button.delete-btn {
     background: var(--color-red);
-    padding: 6px 12px;
-    font-size: 12px;
-    margin: 0;
-    font-weight: 500;
 }
 
 button.delete-btn:hover {
@@ -398,17 +393,18 @@ button.copy-btn {
     padding: 4px 10px;
     font-size: 11px;
     margin-left: 8px;
+    margin-right:0px;
 }
 
 button.copy-btn:hover {
     background: var(--color-green-light);
 }
 
-button.clear-all-btn {
+button.clear-btn {
     background: var(--text-secondary);
 }
 
-button.clear-all-btn:hover {
+button.clear-btn:hover {
     background: #a89984;
 }
 
@@ -662,6 +658,48 @@ button.clear-all-btn:hover {
     color: var(--text-primary);
 }
 
+/* Custom Checkbox Styling */
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-secondary);
+    border-radius: 3px;
+    background: var(--bg-primary);
+    cursor: pointer;
+    position: relative;
+    margin: 0;
+    vertical-align: -4px;
+    transition: all 0.15s ease;
+}
+
+input[type="checkbox"]:hover {
+    border-color: var(--color-blue-light);
+}
+
+input[type="checkbox"]:checked {
+    background: var(--color-blue);
+    border-color: var(--color-blue);
+}
+
+input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--text-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-blue-light);
+}
+
 .image-row-controls input[type="checkbox"] {
     cursor: pointer;
 }
@@ -704,7 +742,7 @@ button.clear-all-btn:hover {
     overflow-x: auto;
     font-size: 11px;
     line-height: 1.4;
-    margin: 8px 0 0 0;
+    margin: 3px 0 0 0;
     color: var(--color-green-light);
     font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
     white-space: pre-wrap;
@@ -1126,15 +1164,234 @@ button.clear-all-btn:hover {
 
 /* Frontmatter Editor Styles */
 .frontmatter-container {
-    display: block;
+    display: flex;
     height: calc(100vh - 50px);
+    overflow: hidden;
+}
+
+.frontmatter-sidebar {
+    width: 250px;
+    min-width: 250px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-primary);
+    padding: 15px;
     overflow-y: auto;
+    display: none; /* Hidden by default, shown when there are pinned colors */
+    transition: background 0.2s ease;
+}
+
+.frontmatter-sidebar.drag-over {
+    background: var(--color-blue-very-light);
+    border-right-color: var(--color-blue-light);
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.frontmatter-sidebar h3 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.clear-pins-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    background: transparent;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.clear-pins-btn:hover {
+    background: var(--color-red-light);
+    border-color: var(--color-red);
+    color: var(--text-primary);
+}
+
+#pinnedColorsDisplay {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pinned-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pinned-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.pinned-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pinned-color-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    cursor: grab;
+    transition: all 0.15s ease;
+}
+
+.pinned-color-item:active {
+    cursor: grabbing;
+}
+
+.pinned-color-item:hover {
+    border-color: var(--color-blue-light);
+    transform: translateX(2px);
+}
+
+.pinned-color-unpin {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 2px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 2px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.pinned-color-item:hover .pinned-color-unpin {
+    display: flex;
+}
+
+.pinned-gradient-item:hover .pinned-color-unpin {
+    display: flex;
+}
+
+.pinned-color-unpin svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--text-secondary);
+}
+
+.pinned-color-unpin:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
+.pinned-color-unpin:hover svg {
+    fill: var(--text-primary);
+}
+
+.pinned-gradient-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    cursor: grab;
+    transition: all 0.15s ease;
+}
+
+.pinned-gradient-item:active {
+    cursor: grabbing;
+}
+
+.pinned-gradient-item:hover {
+    border-color: var(--color-blue-light);
+    transform: translateX(2px);
+}
+
+.pinned-gradient-preview {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 3px;
+    border: 1px solid var(--border-secondary);
+}
+
+.pinned-gradient-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.pinned-gradient-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pinned-gradient-stops {
+    font-size: 10px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-secondary);
+}
+
+.pinned-color-swatch {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 3px;
+    border: 1px solid var(--border-secondary);
+}
+
+.pinned-color-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.pinned-color-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pinned-color-hex {
+    font-size: 10px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-secondary);
 }
 
 .frontmatter-content {
+    flex: 1;
     max-width: 800px;
     margin: 0 auto;
     padding: 15px;
+    overflow-y: auto;
 }
 
 .create-page-controls {
@@ -1148,11 +1405,6 @@ button.clear-all-btn:hover {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-}
-
-.create-page-buttons button, .clear-all-btn {
-    margin-top: 0;
-    margin-right: 0;
 }
 
 .frontmatter-editor {
@@ -1194,7 +1446,6 @@ button.clear-all-btn:hover {
 }
 
 .field-group input[type="checkbox"] {
-    cursor: pointer;
     margin-right: 6px;
 }
 
@@ -1300,17 +1551,52 @@ button.clear-all-btn:hover {
 
 .custom-style-header {
     display: flex;
+    justify-content: left;
+    gap:12px;
     align-items: baseline;
-    gap: 10px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
 }
 
 .custom-style-header label {
     font-size: 13px;
 }
 
-.custom-style-header button {
-    line-height: 1;
+.custom-style-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.save-style-btn,
+.remove-style-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    font-weight: 500;
+    line-height: 1.3;
+    margin:0;
+}
+
+.save-style-btn {
+    background: var(--color-green);
+    border: none;
+}
+
+.save-style-btn:hover {
+    background: var(--color-green-light);
+}
+
+.remove-style-btn {
+    background: transparent;
+    border: 1px solid var(--border-secondary);
+    color: var(--text-secondary);
+}
+
+.remove-style-btn:hover {
+    background: var(--color-red-light);
+    border-color: var(--color-red-light);
+    color: var(--text-primary);
 }
 
 .style-type-selector {
@@ -1371,7 +1657,8 @@ button.clear-all-btn:hover {
 }
 
 /* Gradient Editor */
-.gradient-preview {
+.gradient-preview,
+.solid-color-preview {
     width: 100%;
     height: 120px;
     border-radius: 3px;
@@ -1603,6 +1890,582 @@ button.clear-all-btn:hover {
     color: var(--text-primary);
 }
 
+/* ============================================================================
+   Colors Tool
+   ============================================================================ */
+
+.colors-container {
+    display: flex;
+    height: calc(100vh - 50px);
+    overflow: hidden;
+}
+
+.colors-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.colors-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.colors-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Add Color Form */
+
+.add-color-form-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.add-color-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.add-color-inputs input[type="text"],
+.add-color-inputs select {
+    padding: 8px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.add-color-inputs input[type="text"]:focus,
+.add-color-inputs select:focus {
+    outline: none;
+    border-color: var(--color-blue-light);
+}
+
+.add-color-picker-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+}
+
+.group-selector {
+    width: 100%;
+    cursor: pointer;
+}
+
+.add-color-btn {
+    padding: 10px 16px;
+    background: var(--color-blue-light);
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.add-color-btn:hover {
+    opacity: 0.9;
+}
+
+.add-group-form {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.add-group-form input[type="text"] {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.add-group-form input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-blue-light);
+}
+
+.add-group-form button {
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.add-group-form button:hover {
+    background: var(--bg-primary);
+    border-color: var(--color-blue-light);
+}
+
+.color-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.hex-input-field {
+    width: 100px;
+}
+
+.color-preview-box {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    background: var(--bg-primary);
+}
+
+.add-color-form button {
+    padding: 8px 16px;
+    background: var(--color-blue-light);
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.add-color-form button:hover {
+    opacity: 0.9;
+}
+
+/* Color Group Section */
+
+.color-group-section {
+    transition: opacity 0.2s ease;
+    position: relative;
+}
+
+.color-group-header {
+    margin-bottom: 12px;
+}
+
+.color-group-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+/* Site Items Container - for colors and gradients together */
+
+.site-items-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.site-color-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.15s ease;
+    width: 140px;
+    overflow: hidden;
+}
+
+.site-color-item:active {
+    cursor: grabbing;
+}
+
+.site-color-item:hover {
+    border-color: var(--color-blue-light);
+    box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+.site-color-swatch {
+    width: 100%;
+    height: 100px;
+}
+
+.site-color-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+}
+
+.site-color-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.site-color-hex {
+    font-size: 10px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-secondary);
+}
+
+.site-gradient-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.15s ease;
+    width: 140px;
+    overflow: hidden;
+}
+
+.site-gradient-item:active {
+    cursor: grabbing;
+}
+
+.site-gradient-item:hover {
+    border-color: var(--color-blue-light);
+    box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+.site-gradient-swatch {
+    width: 100%;
+    height: 100px;
+}
+
+.site-gradient-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+}
+
+.site-gradient-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.site-gradient-stops {
+    font-size: 10px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-secondary);
+}
+
+/* Colors Grid */
+
+.colors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+/* Color Card */
+
+.color-card {
+    position: relative;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s ease;
+}
+
+.color-card:hover {
+    border-color: var(--border-primary);
+}
+
+.color-card-preview {
+    width: 100%;
+    height: 80px;
+    border-radius: 3px;
+    border: 1px solid var(--border-secondary);
+}
+
+.color-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.color-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.color-card-hex {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-secondary);
+}
+
+.color-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.icon-btn {
+    padding: 6px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.icon-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--text-secondary);
+    transition: fill 0.15s ease;
+}
+
+.icon-btn:hover {
+    border-color: var(--border-primary);
+}
+
+.icon-btn:hover svg {
+    fill: var(--text-primary);
+}
+
+.pin-btn.pinned {
+    background: var(--color-blue-light);
+    border-color: var(--color-blue-light);
+}
+
+.pin-btn.pinned svg {
+    fill: var(--text-primary);
+}
+
+.delete-btn:hover {
+    border-color: #ef4444;
+}
+
+.delete-btn:hover svg {
+    fill: #ef4444;
+}
+
+/* Color picker within color card */
+
+.color-card .inline-color-picker {
+    margin-top: 12px;
+}
+
+/* Gradient Form */
+
+.gradient-form-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+}
+
+.gradient-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.gradient-inputs input[type="text"]#newGradientName {
+    padding: 8px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.gradient-inputs input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-blue-light);
+}
+
+.gradient-stops-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gradient-stop-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.gradient-stop-hex {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.gradient-stop-hex:focus {
+    outline: none;
+    border-color: var(--color-blue-light);
+}
+
+.remove-gradient-stop {
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 16px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.remove-gradient-stop:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: var(--text-primary);
+}
+
+.gradient-form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.gradient-form-actions button {
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.gradient-form-actions button:hover {
+    background: var(--bg-primary);
+    border-color: var(--color-blue-light);
+}
+
+.save-gradient-btn {
+    background: var(--color-blue-light) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--color-blue-light) !important;
+}
+
+.save-gradient-btn:hover {
+    opacity: 0.9;
+}
+
+.gradient-preview-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+}
+
+.gradient-preview-large {
+    width: 100%;
+    height: 200px;
+    border-radius: 3px;
+    border: 1px solid var(--border-secondary);
+}
+
+/* Gradients Grid */
+
+.gradients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.gradient-card {
+    position: relative;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s ease;
+}
+
+.gradient-card:hover {
+    border-color: var(--border-primary);
+}
+
+.gradient-card-preview {
+    width: 100%;
+    height: 100px;
+    border-radius: 3px;
+    border: 1px solid var(--border-secondary);
+}
+
+.gradient-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gradient-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.gradient-card-stops {
+    font-size: 11px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-secondary);
+}
+
+.gradient-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
 @media (max-width: 1024px) {
     .main-container {
         flex-direction: column;
@@ -1647,4 +2510,262 @@ button.clear-all-btn:hover {
     .section-scroll {
         max-height: none;
     }
+
+    /* Colors tool responsive */
+    .add-color-form-container {
+        grid-template-columns: 1fr;
+    }
+
+    .gradient-form-container {
+        grid-template-columns: 1fr;
+    }
+
+    .frontmatter-sidebar,
+    .colors-container .frontmatter-sidebar {
+        display: none !important;
+    }
+}
+
+/* Upload Section */
+
+#uploadSection {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    padding: 16px;
+}
+
+#colorFileUpload {
+    padding: 8px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ============================================================================
+   SVG Icon Buttons
+   ============================================================================ */
+
+.icon-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+.icon-btn.copy-btn.copied {
+    background: var(--color-green-light);
+    border-color: var(--color-green-light);
+    animation: copyPulse 0.4s ease;
+}
+
+@keyframes copyPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Copy button in various contexts */
+button.copied,
+.copy-btn.copied {
+    background: var(--color-green-light) !important;
+    border-color: var(--color-green-light) !important;
+    animation: copyPulse 0.4s ease;
+}
+
+/* ============================================================================
+   Gradient Modal
+   ============================================================================ */
+
+.gradient-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--overlay-dark);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.gradient-modal.visible {
+    display: flex;
+}
+
+.gradient-modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px var(--shadow-heavy);
+}
+
+.gradient-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.gradient-modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.gradient-modal-close {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gradient-modal-close svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.gradient-modal-close:hover {
+    color: var(--color-red-light);
+}
+
+.gradient-modal-preview {
+    width: 100%;
+    height: 120px;
+    border-radius: 4px;
+    border: 1px solid var(--border-secondary);
+    margin-bottom: 16px;
+}
+
+.gradient-modal-value {
+    margin-bottom: 16px;
+}
+
+.gradient-modal-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.gradient-value-container {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.gradient-value-text {
+    flex: 1;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    padding: 8px;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+.gradient-stops-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gradient-stop-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+}
+
+.gradient-stop-swatch {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 3px;
+    border: 1px solid var(--border-secondary);
+}
+
+.gradient-stop-value {
+    flex: 1;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    color: var(--text-primary);
+}
+
+/* ============================================================================
+   Item Action Buttons
+   ============================================================================ */
+
+.item-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    padding-top:0;
+    background: var(--bg-primary);
+    justify-content: left;
+}
+
+.item-actions .icon-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    margin:0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.item-actions .icon-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--color-blue-light);
+    color: var(--color-blue-light);
+}
+
+.item-actions .icon-btn.pinned {
+    background: var(--color-blue-light);
+    border-color: var(--color-blue-light);
+    color: var(--text-primary);
+}
+
+.item-actions .icon-btn svg {
+    width: 14px;
+    height: 14px;
 }

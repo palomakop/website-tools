@@ -144,6 +144,7 @@ function renderAllPages() {
 
     emptyState.style.display = 'none';
     container.innerHTML = pages.map(page => renderPageCard(page)).join('');
+    setupDropTargetsForPinnedColors();
 }
 
 function renderPageCard(page) {
@@ -317,7 +318,10 @@ function renderCustomStyleField(page) {
         <div class="field-group custom-style-field">
             <div class="custom-style-header">
                 <label>Custom Style</label>
-                <button class="delete-btn" style="font-size: 11px; padding: 3px 8px 5px 8px;" onclick="disableCustomStyle('${page.id}')">Remove</button>
+                <div class="custom-style-actions">
+                    <button class="save-style-btn" onclick="openSaveStyleModal('${page.id}')">Save</button>
+                    <button class="remove-style-btn" onclick="disableCustomStyle('${page.id}')">Remove</button>
+                </div>
             </div>
 
             <div class="style-type-selector">
@@ -353,7 +357,8 @@ function renderSolidColorEditor(page) {
 
     return `
         <div class="style-editor">
-            <div class="color-preview-row">
+            <div class="solid-color-preview" id="solid-preview-${page.id}" style="background-color: ${color};"></div>
+            <div class="color-preview-row" data-field="solidColor">
                 <div class="color-preview"
                      style="background-color: ${color};"
                      onclick="event.stopPropagation(); openColorPicker('${page.id}', 'solidColor', '${color}', undefined, event)">
@@ -436,7 +441,7 @@ function renderNotecardTextColorField(page) {
     return `
         <div class="field-group">
             <label>Notecard Text Color</label>
-            <div class="color-preview-row">
+            <div class="color-preview-row" data-field="notecardTextColor">
                 <div class="color-preview"
                      style="background-color: ${color};"
                      onclick="event.stopPropagation(); openColorPicker('${page.id}', 'notecardTextColor', '${color}', undefined, event)">
@@ -605,6 +610,91 @@ function removeGradientStop(pageId, index) {
     page.data.customStyle.gradientStops.splice(index, 1);
     saveToLocalStorage();
     renderAllPages();
+}
+
+// ============================================================================
+// Save Custom Styles to Sidebar
+// ============================================================================
+
+let currentSaveStylePageId = null;
+
+function openSaveStyleModal(pageId) {
+    currentSaveStylePageId = pageId;
+    const modal = document.getElementById('saveStyleModal');
+    const input = document.getElementById('saveStyleNameInput');
+
+    modal.classList.add('visible');
+    input.value = '';
+    input.focus();
+
+    // Allow Enter key to save
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            saveStyleToSidebar();
+        }
+    };
+
+    // Close on background click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeSaveStyleModal();
+        }
+    };
+}
+
+function closeSaveStyleModal() {
+    const modal = document.getElementById('saveStyleModal');
+    modal.classList.remove('visible');
+    currentSaveStylePageId = null;
+}
+
+function saveStyleToSidebar() {
+    const name = document.getElementById('saveStyleNameInput').value.trim();
+    if (!name) {
+        alert('Please enter a name for the style');
+        return;
+    }
+
+    const page = pages.find(p => p.id === currentSaveStylePageId);
+    if (!page || !page.data.customStyle || !page.data.customStyle.enabled) {
+        alert('No custom style to save');
+        return;
+    }
+
+    // Get saved styles from localStorage
+    const stored = localStorage.getItem('websitetools-colors');
+    const data = stored ? JSON.parse(stored) : {};
+    const savedStyles = data.savedStyles || [];
+
+    // Create the style object
+    const styleId = `saved-style-${Date.now()}`;
+    const customStyle = page.data.customStyle;
+
+    const styleData = {
+        id: styleId,
+        name: name,
+        type: customStyle.type
+    };
+
+    // Add type-specific data
+    if (customStyle.type === 'solid') {
+        styleData.solidColor = customStyle.solidColor || '#cfcecc';
+    } else if (customStyle.type === 'gradient') {
+        styleData.gradientStops = [...customStyle.gradientStops];
+    } else if (customStyle.type === 'image') {
+        styleData.bgImage = customStyle.bgImage || '';
+        styleData.bgImageOpacity = customStyle.bgImageOpacity !== undefined ? customStyle.bgImageOpacity : 1.0;
+    }
+
+    // Add to saved styles
+    savedStyles.push(styleData);
+    data.savedStyles = savedStyles;
+    localStorage.setItem('websitetools-colors', JSON.stringify(data));
+
+    // Dispatch event to update pinned colors component
+    window.dispatchEvent(new CustomEvent('pinnedColorsUpdated'));
+
+    closeSaveStyleModal();
 }
 
 function loadImagePreview(pageId) {
@@ -778,16 +868,20 @@ function updateColorPreviewInDOM(pageId, field, stopIndex, newColor) {
         // For solid colors, find the color preview in the solid color editor
         const colorPreview = card.querySelector('.style-editor .color-preview-row .color-preview');
         const colorValue = card.querySelector('.style-editor .color-preview-row .color-value');
+        const solidPreview = card.querySelector('.solid-color-preview');
         if (colorPreview) colorPreview.style.backgroundColor = newColor;
         if (colorValue) colorValue.textContent = newColor;
+        if (solidPreview) solidPreview.style.backgroundColor = newColor;
     } else if (field === 'gradientStop') {
         // For gradient stops, find the specific stop's color preview
         const gradientStops = card.querySelector(`#gradient-stops-${pageId}`);
         if (gradientStops) {
             const stopRows = gradientStops.querySelectorAll('.gradient-stop-row');
-            if (stopRows[stopIndex]) {
-                const colorPreview = stopRows[stopIndex].querySelector('.color-preview');
-                const colorValue = stopRows[stopIndex].querySelector('.color-value');
+            // Convert actual array index to display index (since stops are shown in reverse)
+            const displayIndex = stopRows.length - 1 - stopIndex;
+            if (stopRows[displayIndex]) {
+                const colorPreview = stopRows[displayIndex].querySelector('.color-preview');
+                const colorValue = stopRows[displayIndex].querySelector('.color-value');
                 if (colorPreview) colorPreview.style.backgroundColor = newColor;
                 if (colorValue) colorValue.textContent = newColor;
             }
@@ -1198,9 +1292,29 @@ function copyOutput(pageId, type) {
     }
 
     navigator.clipboard.writeText(text).then(() => {
-        // Visual feedback could be added here
-        console.log('Copied to clipboard');
+        // Find the button that was clicked
+        const pageCard = document.querySelector(`[data-page-id="${pageId}"]`);
+        if (pageCard) {
+            const buttons = pageCard.querySelectorAll('.copy-btn');
+            buttons.forEach(btn => {
+                if ((type === 'frontmatter' && btn.onclick.toString().includes('frontmatter')) ||
+                    (type === 'filename' && btn.onclick.toString().includes('filename'))) {
+                    showCopyFeedback(btn);
+                }
+            });
+        }
     });
+}
+
+function showCopyFeedback(button) {
+    const originalText = button.textContent;
+    button.classList.add('copied');
+    button.textContent = 'Copied!';
+
+    setTimeout(() => {
+        button.classList.remove('copied');
+        button.textContent = originalText;
+    }, 1200);
 }
 
 // ============================================================================
@@ -1308,12 +1422,406 @@ function setupGradientStopDragHandlers() {
 }
 
 // ============================================================================
+// Pinned Colors (from Colors tool)
+// ============================================================================
+
+function loadPinnedColors() {
+    const stored = localStorage.getItem('websitetools-colors');
+    if (!stored) return [];
+
+    const data = JSON.parse(stored);
+    const pinnedIds = data.pinnedColorIds || [];
+
+    // We need to load both JSON colors and temp colors to resolve the pinned IDs
+    // For now, we'll just return a simple structure - the colors tool handles the full data
+    return pinnedIds;
+}
+
+async function getPinnedColorsData() {
+    const stored = localStorage.getItem('websitetools-colors');
+    if (!stored) return [];
+
+    const data = JSON.parse(stored);
+    const pinnedIds = data.pinnedColorIds || [];
+    const colorsData = data.colorsData;
+
+    if (!colorsData) return [];
+
+    // Parse the site colors data
+    const siteColorGroups = parseSiteColorData(colorsData);
+
+    // Build a list of actual color objects
+    const colors = [];
+
+    pinnedIds.forEach(id => {
+        const parts = id.split('-');
+        if (parts[0] === 'site' && parts[1] === 'color') {
+            const groupIdx = parseInt(parts[2]);
+            const itemIdx = parseInt(parts[3]);
+            if (siteColorGroups[groupIdx] && siteColorGroups[groupIdx].items[itemIdx]) {
+                const item = siteColorGroups[groupIdx].items[itemIdx];
+                if (item.type === 'color') {
+                    colors.push({
+                        id,
+                        name: item.name,
+                        hex: item.hex
+                    });
+                }
+            }
+        }
+    });
+
+    return colors;
+}
+
+function parseSiteColorData(data) {
+    const groups = [];
+
+    // Process both "css" and "frontmatter" top-level keys
+    ['css', 'frontmatter'].forEach(topLevel => {
+        if (!data[topLevel]) return;
+
+        Object.keys(data[topLevel]).forEach(groupName => {
+            const groupData = data[topLevel][groupName];
+            const items = [];
+
+            Object.keys(groupData).forEach(propName => {
+                const item = groupData[propName];
+
+                if (item.type === 'color') {
+                    items.push({
+                        type: 'color',
+                        name: propName,
+                        hex: item.value
+                    });
+                } else if (item.type === 'gradient') {
+                    const stops = extractGradientStopsInFrontmatter(item.value);
+                    items.push({
+                        type: 'gradient',
+                        name: propName,
+                        stops: stops,
+                        cssValue: item.value
+                    });
+                }
+            });
+
+            if (items.length > 0) {
+                groups.push({
+                    title: groupName,
+                    items: items
+                });
+            }
+        });
+    });
+
+    return groups;
+}
+
+function extractGradientStopsInFrontmatter(gradientCSS) {
+    const colorRegex = /#[0-9A-Fa-f]{3,6}|rgba?\([^)]+\)|hsla?\([^)]+\)|[a-z]+/g;
+    const matches = gradientCSS.match(colorRegex);
+
+    if (!matches) return [];
+
+    const excludeWords = ['radial', 'linear', 'to', 'right', 'left', 'top', 'bottom', 'gradient', 'repeating'];
+    const stops = matches.filter(match => {
+        return !excludeWords.includes(match.toLowerCase());
+    });
+
+    return stops;
+}
+
+// Pinned colors are now handled by the <pinned-colors> web component
+
+async function getPinnedGradientsData() {
+    const stored = localStorage.getItem('websitetools-colors');
+    if (!stored) return [];
+
+    const data = JSON.parse(stored);
+    const pinnedIds = data.pinnedGradientIds || [];
+    const tempGradients = data.tempGradients || [];
+    const colorsData = data.colorsData;
+
+    const gradients = [];
+
+    // Add temp gradients
+    pinnedIds.forEach(id => {
+        const parts = id.split('-');
+        if (parts[0] === 'gradient' && parts[1] === 'temp') {
+            const idx = parseInt(parts[2]);
+            if (tempGradients[idx]) {
+                gradients.push({
+                    id,
+                    name: tempGradients[idx].name,
+                    stops: tempGradients[idx].stops
+                });
+            }
+        }
+    });
+
+    // Add site gradients
+    if (colorsData) {
+        const siteColorGroups = parseSiteColorData(colorsData);
+
+        pinnedIds.forEach(id => {
+            const parts = id.split('-');
+            if (parts[0] === 'site' && parts[1] === 'gradient') {
+                const groupIdx = parseInt(parts[2]);
+                const itemIdx = parseInt(parts[3]);
+                if (siteColorGroups[groupIdx] && siteColorGroups[groupIdx].items[itemIdx]) {
+                    const item = siteColorGroups[groupIdx].items[itemIdx];
+                    if (item.type === 'gradient') {
+                        gradients.push({
+                            id,
+                            name: item.name,
+                            stops: item.stops
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    return gradients;
+}
+
+// Functions removed - now handled by <pinned-colors> web component
+
+function applyPinnedColor(hex) {
+    // If a color picker is open, apply the color to it
+    if (currentPickerId && currentColorPickerCallback) {
+        // Parse the color and update the picker state
+        const rgb = hexToRgb(hex);
+        const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+        currentHue = hsb.h;
+        currentSat = hsb.s;
+        currentBrightness = hsb.b;
+
+        // Update UI
+        updateXYPadBackground(currentPickerId);
+        updateXYCursorPosition(currentPickerId);
+        updateHueThumbPosition(currentPickerId);
+        const hueValueEl = document.getElementById(`hueValue-${currentPickerId}`);
+        if (hueValueEl) {
+            hueValueEl.textContent = Math.round(currentHue);
+        }
+
+        // Update hex input
+        const hexInput = document.getElementById(`hexInput-${currentPickerId}`);
+        if (hexInput) {
+            hexInput.value = hex;
+        }
+
+        // Call the callback to actually save the color
+        currentColorPickerCallback(hex);
+    }
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
+
+function setupDropTargetsForPinnedColors() {
+    // Make color previews drop targets
+    document.querySelectorAll('.color-preview').forEach(preview => {
+        preview.addEventListener('dragover', (e) => {
+            if (e.dataTransfer.types.includes('application/pinned-color')) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                preview.style.outline = '2px solid var(--color-blue-light)';
+            }
+        });
+
+        preview.addEventListener('dragleave', () => {
+            preview.style.outline = '';
+        });
+
+        preview.addEventListener('drop', (e) => {
+            preview.style.outline = '';
+            const colorHex = e.dataTransfer.getData('application/pinned-color');
+            if (!colorHex) return;
+
+            e.preventDefault();
+
+            // Find the page ID and field
+            const colorPreviewRow = preview.closest('.color-preview-row');
+            const gradientStopRow = preview.closest('.gradient-stop-row');
+
+            if (colorPreviewRow) {
+                // Check which field this is
+                const field = colorPreviewRow.dataset.field;
+                const pageCard = preview.closest('[data-page-id]');
+                const pageId = pageCard?.dataset.pageId;
+                if (!pageId) return;
+
+                const page = pages.find(p => p.id === pageId);
+                if (!page) return;
+
+                if (field === 'solidColor') {
+                    page.data.customStyle.solidColor = colorHex;
+                } else if (field === 'notecardTextColor') {
+                    page.data.notecardTextColor = colorHex;
+                }
+
+                saveToLocalStorage();
+                updatePageOutput(pageId);
+
+                // Update preview
+                preview.style.backgroundColor = colorHex;
+                const colorValue = colorPreviewRow.querySelector('.color-value');
+                if (colorValue) colorValue.textContent = colorHex;
+
+                // Update solid color preview box if it's a solid color field
+                if (field === 'solidColor') {
+                    const solidPreview = pageCard.querySelector('.solid-color-preview');
+                    if (solidPreview) solidPreview.style.backgroundColor = colorHex;
+                }
+            } else if (gradientStopRow) {
+                // Gradient stop drop
+                const pageId = gradientStopRow.dataset.pageId;
+                const stopIndex = parseInt(gradientStopRow.dataset.stopIndex);
+
+                const page = pages.find(p => p.id === pageId);
+                if (!page) return;
+
+                page.data.customStyle.gradientStops[stopIndex] = colorHex;
+                saveToLocalStorage();
+                updatePageOutput(pageId);
+
+                // Update preview
+                preview.style.backgroundColor = colorHex;
+                const colorValue = gradientStopRow.querySelector('.color-value');
+                if (colorValue) colorValue.textContent = colorHex;
+
+                // Update gradient preview
+                const card = document.querySelector(`[data-page-id="${pageId}"]`);
+                const gradientPreview = card?.querySelector('.gradient-preview');
+                if (gradientPreview && page.data.customStyle) {
+                    const stops = page.data.customStyle.gradientStops;
+                    gradientPreview.style.background = `radial-gradient(${stops.join(', ')})`;
+                }
+            }
+        });
+    });
+
+    // Make gradient previews drop targets for gradient groups
+    document.querySelectorAll('.gradient-preview').forEach(preview => {
+        preview.addEventListener('dragover', (e) => {
+            if (e.dataTransfer.types.includes('application/pinned-gradient')) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                preview.style.outline = '2px solid var(--color-blue-light)';
+            }
+        });
+
+        preview.addEventListener('dragleave', () => {
+            preview.style.outline = '';
+        });
+
+        preview.addEventListener('drop', (e) => {
+            preview.style.outline = '';
+            const stopsData = e.dataTransfer.getData('application/pinned-gradient');
+            if (!stopsData) return;
+
+            e.preventDefault();
+
+            const stops = JSON.parse(stopsData);
+            const pageCard = preview.closest('[data-page-id]');
+            const pageId = pageCard?.dataset.pageId;
+            if (!pageId) return;
+
+            const page = pages.find(p => p.id === pageId);
+            if (!page) return;
+
+            page.data.customStyle.gradientStops = stops;
+            saveToLocalStorage();
+            renderAllPages();
+        });
+    });
+
+    // Make all style previews drop targets for saved styles, pinned colors, and pinned gradients
+    document.querySelectorAll('.gradient-preview, .solid-color-preview, .image-preview').forEach(preview => {
+        preview.addEventListener('dragover', (e) => {
+            const hasSavedStyle = e.dataTransfer.types.includes('application/saved-style');
+            const hasPinnedColor = e.dataTransfer.types.includes('application/pinned-color');
+            const hasPinnedGradient = e.dataTransfer.types.includes('application/pinned-gradient');
+
+            if (hasSavedStyle || hasPinnedColor || hasPinnedGradient) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+
+                if (hasSavedStyle) {
+                    preview.style.outline = '2px solid var(--color-green-light)';
+                } else if (hasPinnedColor) {
+                    preview.style.outline = '2px solid var(--color-blue-light)';
+                } else if (hasPinnedGradient) {
+                    preview.style.outline = '2px solid var(--color-blue-light)';
+                }
+            }
+        });
+
+        preview.addEventListener('dragleave', () => {
+            preview.style.outline = '';
+        });
+
+        preview.addEventListener('drop', (e) => {
+            preview.style.outline = '';
+
+            const styleData = e.dataTransfer.getData('application/saved-style');
+            const colorHex = e.dataTransfer.getData('application/pinned-color');
+            const gradientData = e.dataTransfer.getData('application/pinned-gradient');
+
+            if (!styleData && !colorHex && !gradientData) return;
+
+            e.preventDefault();
+
+            const pageCard = preview.closest('[data-page-id]');
+            const pageId = pageCard?.dataset.pageId;
+            if (!pageId) return;
+
+            const page = pages.find(p => p.id === pageId);
+            if (!page) return;
+
+            // Handle saved styles
+            if (styleData) {
+                const style = JSON.parse(styleData);
+
+                if (style.type === 'solid') {
+                    page.data.customStyle.type = 'solid';
+                    page.data.customStyle.solidColor = style.solidColor;
+                } else if (style.type === 'gradient') {
+                    page.data.customStyle.type = 'gradient';
+                    page.data.customStyle.gradientStops = [...style.gradientStops];
+                } else if (style.type === 'image') {
+                    page.data.customStyle.type = 'image';
+                    page.data.customStyle.bgImage = style.bgImage;
+                    page.data.customStyle.bgImageOpacity = style.bgImageOpacity;
+                    page.data.customStyle.imageLoaded = false; // Will need to reload
+                }
+            }
+            // Handle pinned colors - switch to solid color type
+            else if (colorHex) {
+                page.data.customStyle.type = 'solid';
+                page.data.customStyle.solidColor = colorHex;
+            }
+            // Handle pinned gradients - switch to gradient type
+            else if (gradientData) {
+                const stops = JSON.parse(gradientData);
+                page.data.customStyle.type = 'gradient';
+                page.data.customStyle.gradientStops = stops;
+            }
+
+            saveToLocalStorage();
+            renderAllPages();
+        });
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFromLocalStorage();
     setupGradientStopDragHandlers();
+    // Pinned colors are rendered by the <pinned-colors> web component
 
     // Close color picker when clicking outside (but not when just releasing a drag)
     document.addEventListener('mousedown', (e) => {

@@ -10,6 +10,7 @@ class WebsiteNav extends HTMLElement {
         const isImages = currentPath.includes('/images/');
         const isVideos = currentPath.includes('/videos/');
         const isFrontmatter = currentPath.includes('/frontmatter/');
+        const isColors = currentPath.includes('/colors/');
 
         this.innerHTML = `
             <nav class="site-nav">
@@ -24,6 +25,7 @@ class WebsiteNav extends HTMLElement {
                         <a href="/images/" class="nav-link ${isImages ? 'active' : ''}">Images</a>
                         <a href="/videos/" class="nav-link ${isVideos ? 'active' : ''}">Videos</a>
                         <a href="/frontmatter/" class="nav-link ${isFrontmatter ? 'active' : ''}">Frontmatter</a>
+                        <a href="/colors/" class="nav-link ${isColors ? 'active' : ''}">Colors</a>
                     </div>
                 </div>
                 <div class="nav-drawer" id="navDrawer">
@@ -37,6 +39,7 @@ class WebsiteNav extends HTMLElement {
                             <a href="/images/" class="nav-drawer-link ${isImages ? 'active' : ''}">Images</a>
                             <a href="/videos/" class="nav-drawer-link ${isVideos ? 'active' : ''}">Videos</a>
                             <a href="/frontmatter/" class="nav-drawer-link ${isFrontmatter ? 'active' : ''}">Frontmatter</a>
+                            <a href="/colors/" class="nav-drawer-link ${isColors ? 'active' : ''}">Colors</a>
                         </div>
                     </div>
                 </div>

@@ -331,12 +331,12 @@ function copyShortcode(videoId, btn) {
 
     navigator.clipboard.writeText(text).then(() => {
         const originalText = btn.textContent;
+        btn.classList.add('copied');
         btn.textContent = 'Copied!';
-        btn.style.background = 'var(--color-success)';
         setTimeout(() => {
+            btn.classList.remove('copied');
             btn.textContent = originalText;
-            btn.style.background = '';
-        }, 2000);
+        }, 1200);
     }).catch(err => {
         alert('Failed to copy: ' + err);
     });

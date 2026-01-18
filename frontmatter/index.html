@@ -6,10 +6,12 @@
     <title>📝 Frontmatter</title>
     <link rel="stylesheet" href="../style.css">
     <script src="../nav.js"></script>
+    <script src="../pinned-colors.js"></script>
 </head>
 <body>
     <website-nav></website-nav>
     <div class="main-container frontmatter-container">
+        <pinned-colors class="frontmatter-sidebar" id="pinnedColorsSidebar"></pinned-colors>
         <div class="frontmatter-content">
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -21,12 +23,34 @@
                             <button onclick="createFromTemplate('notes')">Notes Page</button>
                         </div>
                     </div>
-                    <button onclick="clearAllData()" class="clear-all-btn">Clear All Pages</button>
+                    <button onclick="clearAllData()" class="clear-btn">Clear All Pages</button>
                 </div>
             </div>
             <div id="editorsContainer" class="blocks-container"></div>
             <div id="emptyState" style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
                 <p>No pages created yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Style Modal -->
+    <div id="saveStyleModal" class="gradient-modal">
+        <div class="gradient-modal-content" style="max-width: 400px;">
+            <div class="gradient-modal-header">
+                <h3 class="gradient-modal-title">Save Custom Style</h3>
+                <button class="gradient-modal-close" onclick="closeSaveStyleModal()">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <div style="padding: 10px 0;">
+                <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--text-primary);">Style Name</label>
+                <input type="text" id="saveStyleNameInput" placeholder="e.g. Ocean Gradient" style="width: 100%; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-secondary); border-radius: 3px; color: var(--text-primary); font-size: 13px;">
+                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button onclick="closeSaveStyleModal()" style="flex: 1; padding: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-secondary); border-radius: 3px; color: var(--text-primary); cursor: pointer;">Cancel</button>
+                    <button onclick="saveStyleToSidebar()" style="flex: 1; padding: 8px; background: var(--color-green-light); border: none; border-radius: 3px; color: white; font-weight: 600; cursor: pointer;">Save</button>
+                </div>
             </div>
         </div>
     </div>

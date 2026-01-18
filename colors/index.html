@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌈 Colors</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="../nav.js"></script>
+    <script src="../pinned-colors.js"></script>
+</head>
+<body>
+    <object data="../icons.svg" type="image/svg+xml" style="position: absolute; width: 0; height: 0;"></object>
+    <website-nav></website-nav>
+    <div class="main-container colors-container">
+        <pinned-colors class="frontmatter-sidebar" id="pinnedColorsSidebar"></pinned-colors>
+        <div class="colors-scroll-container">
+            <div class="colors-content">
+                <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h2 style="margin: 0 0 8px 0;">Colors</h2>
+                        <div id="colorStatus" style="font-size: 12px; color: var(--text-secondary);">
+                            Loading...
+                        </div>
+                    </div>
+                    <div class="colors-actions">
+                        <input type="file" id="colorFileUpload" accept=".json" onchange="handleFileUpload(event)" style="display: none;">
+                        <button onclick="document.getElementById('colorFileUpload').click()">Load from File</button>
+                        <button onclick="loadFromURL()">Load from URL</button>
+                        <button onclick="refreshColors()" id="refreshBtn" style="display: none;">Refresh</button>
+                        <button onclick="clearAllData()" class="clear-btn">Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="siteColorsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gradient Modal -->
+    <div id="gradientModal" class="gradient-modal">
+        <div class="gradient-modal-content">
+            <div class="gradient-modal-header">
+                <h3 class="gradient-modal-title" id="gradientModalTitle"></h3>
+                <button class="gradient-modal-close" onclick="closeGradientModal()">
+                    <svg><use href="../icons.svg#icon-close"/></svg>
+                </button>
+            </div>
+            <div id="gradientModalBody"></div>
+        </div>
+    </div>
+
+    <script src="colors.js"></script>
+</body>
+</html>
