@@ -218,7 +218,17 @@
                         <option value="tarot">Tarot</option>
                     </select>
                 </div>
-                <div class="drop-zone" data-block-type="gallery" data-block-id="${blockId}" data-gallery-type="two-column">
+                <div class="gallery-bg-color-selector">
+                    <label>
+                        <input type="checkbox" class="bg-color-checkbox" onchange="toggleBackgroundColor('${blockId}', this.checked)">
+                        Customize Lightbox Background Color
+                    </label>
+                    <div class="bg-color-input-wrapper" style="display: none;">
+                        <input type="text" class="bg-color-input" value="var(--main-bg-color)" oninput="updateBackgroundColorValue('${blockId}', this.value)">
+                        <div class="bg-color-preview"></div>
+                    </div>
+                </div>
+                <div class="drop-zone" data-block-type="gallery" data-block-id="${blockId}" data-gallery-type="two-column" data-bg-color="var(--main-bg-color)" data-bg-color-enabled="false">
                 </div>
                 <div class="shortcode-output">
                     <div class="output-header">
@@ -1160,7 +1170,17 @@
                         <option value="tarot">Tarot</option>
                     </select>
                 </div>
-                <div class="drop-zone" data-block-type="gallery" data-block-id="${blockId}" data-gallery-type="two-column">
+                <div class="gallery-bg-color-selector">
+                    <label>
+                        <input type="checkbox" class="bg-color-checkbox" onchange="toggleBackgroundColor('${blockId}', this.checked)">
+                        Customize Lightbox Background Color
+                    </label>
+                    <div class="bg-color-input-wrapper" style="display: none;">
+                        <input type="text" class="bg-color-input" value="var(--main-bg-color)" oninput="updateBackgroundColorValue('${blockId}', this.value)">
+                        <div class="bg-color-preview"></div>
+                    </div>
+                </div>
+                <div class="drop-zone" data-block-type="gallery" data-block-id="${blockId}" data-gallery-type="two-column" data-bg-color="var(--main-bg-color)" data-bg-color-enabled="false">
                     <div class="drop-zone-empty">Drag images here (can add multiple)</div>
                 </div>
                 <div class="shortcode-output">
@@ -1215,6 +1235,55 @@
             saveState();
         }
 
+        // Toggle background color checkbox
+        function toggleBackgroundColor(blockId, isEnabled) {
+            const block = document.getElementById(blockId);
+            const dropZone = block.querySelector('.drop-zone');
+            const bgColorInputWrapper = block.querySelector('.bg-color-input-wrapper');
+            const bgColorInput = block.querySelector('.bg-color-input');
+
+            dropZone.dataset.bgColorEnabled = isEnabled;
+            bgColorInputWrapper.style.display = isEnabled ? 'flex' : 'none';
+
+            // Update the data attribute with the current input value
+            if (isEnabled) {
+                dropZone.dataset.bgColor = bgColorInput.value || 'var(--main-bg-color)';
+                updateBackgroundColorPreview(blockId, bgColorInput.value);
+            }
+
+            updateShortcode(blockId);
+            saveState();
+        }
+
+        // Update background color value
+        function updateBackgroundColorValue(blockId, value) {
+            const block = document.getElementById(blockId);
+            const dropZone = block.querySelector('.drop-zone');
+
+            dropZone.dataset.bgColor = value;
+            updateBackgroundColorPreview(blockId, value);
+
+            updateShortcode(blockId);
+            saveState();
+        }
+
+        // Update background color preview
+        function updateBackgroundColorPreview(blockId, value) {
+            const block = document.getElementById(blockId);
+            const preview = block.querySelector('.bg-color-preview');
+
+            // Check if value is a hex color or rgb/rgba
+            const isHex = /^#[0-9A-Fa-f]{3,8}$/.test(value);
+            const isRgb = /^rgba?\(/.test(value);
+
+            if (isHex || isRgb) {
+                preview.style.backgroundColor = value;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
         // Update shortcode output
         function updateShortcode(blockId) {
             const block = document.getElementById(blockId);
@@ -1246,7 +1315,15 @@
                 }
             } else if (blockType === 'gallery') {
                 const galleryType = dropZone.dataset.galleryType || 'two-column';
-                shortcode = `{% photoGrid "${galleryType}" %}\n`;
+                const bgColorEnabled = dropZone.dataset.bgColorEnabled === 'true';
+                const bgColor = dropZone.dataset.bgColor || '';
+
+                // Build photoGrid opening tag with optional background color
+                if (bgColorEnabled && bgColor) {
+                    shortcode = `{% photoGrid "${galleryType}", "${bgColor}" %}\n`;
+                } else {
+                    shortcode = `{% photoGrid "${galleryType}" %}\n`;
+                }
 
                 imageRows.forEach(row => {
                     const url = row.dataset.url;
@@ -1339,6 +1416,8 @@
                 if (blockData.type === 'gallery') {
                     const dropZone = block.querySelector('.drop-zone');
                     blockData.galleryType = dropZone.dataset.galleryType || 'two-column';
+                    blockData.bgColor = dropZone.dataset.bgColor || 'var(--main-bg-color)';
+                    blockData.bgColorEnabled = dropZone.dataset.bgColorEnabled === 'true';
                 }
 
                 const imageRows = block.querySelectorAll('.image-row');
@@ -1404,7 +1483,12 @@
                     if (blockData.type === 'image') {
                         createImageBlockWithId(blockData.id);
                     } else {
-                        createGalleryBlockWithId(blockData.id, blockData.galleryType || 'two-column');
+                        createGalleryBlockWithId(
+                            blockData.id,
+                            blockData.galleryType || 'two-column',
+                            blockData.bgColor || 'var(--main-bg-color)',
+                            blockData.bgColorEnabled || false
+                        );
                     }
 
                     // Add images to the block
@@ -1466,7 +1550,7 @@
             setupDropZone(dropZone, 'image', blockId);
         }
 
-        function createGalleryBlockWithId(blockId, galleryType = 'two-column') {
+        function createGalleryBlockWithId(blockId, galleryType = 'two-column', bgColor = 'var(--main-bg-color)', bgColorEnabled = false) {
             const container = document.getElementById('blocksContainer');
 
             const block = document.createElement('div');
@@ -1486,7 +1570,17 @@
                         <option value="tarot" ${galleryType === 'tarot' ? 'selected' : ''}>Tarot</option>
                     </select>
                 </div>
-                <div class="drop-zone" data-block-type="gallery" data-block-id="${blockId}" data-gallery-type="${galleryType}">
+                <div class="gallery-bg-color-selector">
+                    <label>
+                        <input type="checkbox" class="bg-color-checkbox" ${bgColorEnabled ? 'checked' : ''} onchange="toggleBackgroundColor('${blockId}', this.checked)">
+                        Customize Lightbox Background Color
+                    </label>
+                    <div class="bg-color-input-wrapper" style="display: ${bgColorEnabled ? 'flex' : 'none'};">
+                        <input type="text" class="bg-color-input" value="${bgColor}" oninput="updateBackgroundColorValue('${blockId}', this.value)">
+                        <div class="bg-color-preview"></div>
+                    </div>
+                </div>
+                <div class="drop-zone" data-block-type="gallery" data-block-id="${blockId}" data-gallery-type="${galleryType}" data-bg-color="${bgColor}" data-bg-color-enabled="${bgColorEnabled}">
                     <div class="drop-zone-empty">Drag images here (can add multiple)</div>
                 </div>
                 <div class="shortcode-output">
@@ -1502,6 +1596,11 @@
 
             const dropZone = block.querySelector('.drop-zone');
             setupDropZone(dropZone, 'gallery', blockId);
+
+            // Update preview if background color is enabled
+            if (bgColorEnabled) {
+                updateBackgroundColorPreview(blockId, bgColor);
+            }
         }
 
         function clearAllData() {
