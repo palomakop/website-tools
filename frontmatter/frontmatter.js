@@ -72,13 +72,15 @@ const TEMPLATES = {
         locationCity: '',
         thumbnail: '',
         thumbnailAlt: '',
+        lightMode: false,
         customStyle: {
             enabled: false,
             type: 'solid',
             solidColor: '#141414',
             gradientStops: ['#d5dcdf', '#dddddd', '#d0dada'],
             bgImage: '',
-            bgImageOpacity: 1.0
+            bgImageOpacity: 1.0,
+            textColor: '#ffffef'
         }
     }
 };
@@ -277,7 +279,11 @@ function renderFieldsForType(page) {
             fields.push(renderTextField(page, 'locationCity', 'Location City', "Ex. 'New Haven, CT'"));
             fields.push(renderTextField(page, 'thumbnail', 'Thumbnail', 'Flyer image URL'));
             fields.push(renderTextField(page, 'thumbnailAlt', 'Thumbnail Alt', 'Describe the flyer'));
+            fields.push(renderBooleanField(page, 'lightMode', 'Light Mode'));
             fields.push(renderCustomStyleField(page));
+            if (page.data.customStyle && page.data.customStyle.enabled) {
+                fields.push(renderEventTextColorField(page));
+            }
             break;
     }
 
@@ -415,10 +421,12 @@ function renderStyleEditor(page) {
 
 function renderSolidColorEditor(page) {
     const color = page.data.customStyle.solidColor || '#cfcecc';
+    const textColor = page.type === 'event' && page.data.customStyle.textColor ? page.data.customStyle.textColor : '';
+    const textPreview = page.type === 'event' ? `<span style="color: ${textColor};">Example Text</span>` : '';
 
     return `
         <div class="style-editor">
-            <div class="solid-color-preview" id="solid-preview-${page.id}" style="background-color: ${color};"></div>
+            <div class="solid-color-preview" id="solid-preview-${page.id}" style="background-color: ${color};">${textPreview}</div>
             <div class="color-preview-row" data-field="solidColor">
                 <div class="color-preview"
                      style="background-color: ${color};"
@@ -433,13 +441,15 @@ function renderSolidColorEditor(page) {
 function renderGradientEditor(page) {
     const stops = page.data.customStyle.gradientStops || ['#d5dcdf', '#dddddd', '#d0dada'];
     const gradientCSS = `radial-gradient(${stops.join(', ')})`;
+    const textColor = page.type === 'event' && page.data.customStyle.textColor ? page.data.customStyle.textColor : '';
+    const textPreview = page.type === 'event' ? `<span style="color: ${textColor};">Example Text</span>` : '';
 
     // Display stops in reverse order (outer to inner) for more intuitive editing
     const stopsReversed = [...stops].reverse();
 
     return `
         <div class="style-editor">
-            <div class="gradient-preview" style="background: ${gradientCSS};"></div>
+            <div class="gradient-preview" style="background: ${gradientCSS};">${textPreview}</div>
             <div class="gradient-stops" id="gradient-stops-${page.id}">
                 ${stopsReversed.map((color, displayIdx) => {
                     const actualIdx = stops.length - 1 - displayIdx; // Map back to actual array index
@@ -469,10 +479,12 @@ function renderImageEditor(page) {
     const bgImage = page.data.customStyle.bgImage || '';
     const opacity = page.data.customStyle.bgImageOpacity !== undefined ? page.data.customStyle.bgImageOpacity : 1.0;
     const imageLoaded = page.data.customStyle.imageLoaded || false;
+    const textColor = page.type === 'event' && page.data.customStyle.textColor ? page.data.customStyle.textColor : '';
+    const textPreview = page.type === 'event' ? `<span style="color: ${textColor};">Example Text</span>` : '';
 
     return `
         <div class="style-editor">
-            <div class="image-preview-container" id="image-preview-${page.id}" style="background-image: ${imageLoaded && bgImage ? `url(${bgImage})` : 'none'}; opacity: ${opacity};"></div>
+            <div class="image-preview-container" id="image-preview-${page.id}" style="background-image: ${imageLoaded && bgImage ? `url(${bgImage})` : 'none'}; opacity: ${opacity};">${textPreview}</div>
             <div class="field-group">
                 <label>Image URL</label>
                 <input type="text"
@@ -506,6 +518,23 @@ function renderNotecardTextColorField(page) {
                 <div class="color-preview"
                      style="background-color: ${color};"
                      onclick="event.stopPropagation(); openColorPicker('${page.id}', 'notecardTextColor', '${color}', undefined, event)">
+                </div>
+                <span class="color-value">${color}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderEventTextColorField(page) {
+    const color = page.data.customStyle.textColor || '#ffffef';
+
+    return `
+        <div class="field-group">
+            <label>Text Color</label>
+            <div class="color-preview-row" data-field="eventTextColor">
+                <div class="color-preview"
+                     style="background-color: ${color};"
+                     onclick="event.stopPropagation(); openColorPicker('${page.id}', 'eventTextColor', '${color}', undefined, event)">
                 </div>
                 <span class="color-value">${color}</span>
             </div>
@@ -845,6 +874,8 @@ function openColorPicker(pageId, field, currentColor, stopIndex, evt) {
             page.data.customStyle.gradientStops[stopIndex] = newColor;
         } else if (field === 'notecardTextColor') {
             page.data.notecardTextColor = newColor;
+        } else if (field === 'eventTextColor') {
+            page.data.customStyle.textColor = newColor;
         }
 
         saveToLocalStorage();
@@ -964,6 +995,29 @@ function updateColorPreviewInDOM(pageId, field, stopIndex, newColor) {
                 if (colorPreview) colorPreview.style.backgroundColor = newColor;
                 if (colorValue) colorValue.textContent = newColor;
                 break;
+            }
+        }
+    } else if (field === 'eventTextColor') {
+        // For event text color, find the color preview in the text color field
+        const fieldGroups = card.querySelectorAll('.field-group');
+        for (let group of fieldGroups) {
+            const label = group.querySelector('label');
+            const colorPreviewRow = group.querySelector('.color-preview-row');
+            if (label && label.textContent.includes('Text Color') && colorPreviewRow && colorPreviewRow.dataset.field === 'eventTextColor') {
+                const colorPreview = group.querySelector('.color-preview');
+                const colorValue = group.querySelector('.color-value');
+                if (colorPreview) colorPreview.style.backgroundColor = newColor;
+                if (colorValue) colorValue.textContent = newColor;
+                break;
+            }
+        }
+
+        // Update the text color in the style preview boxes
+        const styleEditor = card.querySelector('.style-editor');
+        if (styleEditor) {
+            const previewText = styleEditor.querySelector('.solid-color-preview span, .gradient-preview span, .image-preview-container span');
+            if (previewText) {
+                previewText.style.color = newColor;
             }
         }
     }
@@ -1299,6 +1353,7 @@ function generateFrontmatter(page) {
             if (data.locationCity) lines.push(`locationCity: ${quote(data.locationCity)}`);
             if (data.thumbnail) lines.push(`thumbnail: ${quote(data.thumbnail)}`);
             if (data.thumbnailAlt) lines.push(`thumbnailAlt: ${quote(data.thumbnailAlt)}`);
+            if (data.lightMode) lines.push(`dark: false`);
 
             if (data.customStyle && data.customStyle.enabled) {
                 if (data.customStyle.type === 'image') {
@@ -1309,7 +1364,7 @@ function generateFrontmatter(page) {
                         }
                     }
                 } else {
-                    lines.push(generateCustomStyleYAML(data.customStyle));
+                    lines.push(generateEventCustomStyleYAML(data.customStyle));
                 }
             }
             break;
@@ -1329,6 +1384,26 @@ function generateCustomStyleYAML(customStyle) {
         return `customStyle: >\n  :root {\n    --main-bg-color:${lastColor};\n    --main-bg-gradient:${gradient};\n  }`;
     }
     return '';
+}
+
+function generateEventCustomStyleYAML(customStyle) {
+    const textColor = customStyle.textColor || '#ffffef';
+    let css = '';
+
+    // Add background color/gradient
+    if (customStyle.type === 'solid') {
+        css += `  :root {\n    --main-bg-color:${customStyle.solidColor};\n    --main-bg-gradient:none;\n  }\n`;
+    } else if (customStyle.type === 'gradient') {
+        const stops = customStyle.gradientStops;
+        const lastColor = stops[stops.length - 1];
+        const gradient = `radial-gradient(${stops.join(', ')})`;
+        css += `  :root {\n    --main-bg-color:${lastColor};\n    --main-bg-gradient:${gradient};\n  }\n`;
+    }
+
+    // Add text color
+    css += `  body, body a {\n    color:${textColor};\n  }`;
+
+    return `customStyle: >\n${css}`;
 }
 
 function generateNotecardStyleYAML(customStyle, notecardDark, notecardTextColor) {
@@ -1355,9 +1430,10 @@ function generateFilename(page) {
     switch (page.type) {
         case 'blog':
             return page.data.date ? `${page.data.date}.md` : 'untitled.md';
+        case 'event':
+            return page.data.eventDate ? `${page.data.eventDate}.md` : 'untitled.md';
         case 'artwork':
         case 'notes':
-        case 'event':
             const title = page.data.title || 'untitled';
             const slug = title.toLowerCase()
                 .replace(/[^\w\s-]/g, '')
@@ -1754,6 +1830,8 @@ function setupDropTargetsForPinnedColors() {
                     page.data.customStyle.solidColor = colorHex;
                 } else if (field === 'notecardTextColor') {
                     page.data.notecardTextColor = colorHex;
+                } else if (field === 'eventTextColor') {
+                    page.data.customStyle.textColor = colorHex;
                 }
 
                 saveToLocalStorage();

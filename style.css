@@ -1719,6 +1719,11 @@ input[type="checkbox"]:focus {
     overflow: hidden;
     min-height: 40px;
     max-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
 }
 
 .gradient-stops {
@@ -1797,6 +1802,11 @@ input[type="checkbox"]:focus {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
 }
 
 /* Image Preview (old style, kept for compatibility) */
