@@ -32,7 +32,7 @@ const TEMPLATES = {
         customStyle: {
             enabled: true,
             type: 'solid', // solid, gradient, or image
-            solidColor: '#cfcecc',
+            solidColor: '#f1f0e9',
             gradientStops: ['#d5dcdf', '#dddddd', '#d0dada'],
             bgImage: '',
             bgImageOpacity: 1.0
@@ -49,13 +49,37 @@ const TEMPLATES = {
         customStyle: {
             enabled: true,
             type: 'solid',
-            solidColor: '#d8ddea',
+            solidColor: '#f1f0e9',
             gradientStops: ['#c7d2f0', '#e0d4ef', '#f2d6d6'],
             bgImage: '',
             bgImageOpacity: 1.0
         },
         notecardDark: false,
         notecardTextColor: '#f2f2f2'
+    },
+    event: {
+        title: '',
+        eventType: '',
+        eventDate: '',
+        eventEndDate: '',
+        eventTime: '',
+        eventLink: '',
+        eventLinkLabel: '',
+        location: '',
+        locationShortName: '',
+        locationLink: '',
+        locationAddress: '',
+        locationCity: '',
+        thumbnail: '',
+        thumbnailAlt: '',
+        customStyle: {
+            enabled: false,
+            type: 'solid',
+            solidColor: '#141414',
+            gradientStops: ['#d5dcdf', '#dddddd', '#d0dada'],
+            bgImage: '',
+            bgImageOpacity: 1.0
+        }
     }
 };
 
@@ -155,6 +179,8 @@ function renderPageCard(page) {
         typeLabel = 'Notes Page';
     } else if (page.type === 'artwork') {
         typeLabel = 'Artwork';
+    } else if (page.type === 'event') {
+        typeLabel = 'Event Page';
     }
 
     // Ensure colorIndex exists for pages loaded from localStorage before this feature
@@ -235,6 +261,24 @@ function renderFieldsForType(page) {
                 }
             }
             break;
+
+        case 'event':
+            fields.push(renderTextField(page, 'title', 'Title', "Use ' / ' to separate acts in a live show", true));
+            fields.push(renderTextField(page, 'eventType', 'Event Type', 'Exhibition, Live Show, etc.', true));
+            fields.push(renderDateField(page, 'eventDate', 'Event Date', true));
+            fields.push(renderDateField(page, 'eventEndDate', 'Event End Date', false));
+            fields.push(renderTextField(page, 'eventTime', 'Event Time', "Ex. '2pm'"));
+            fields.push(renderTextField(page, 'eventLink', 'Event Link', 'A link to more info, tickets, etc.'));
+            fields.push(renderTextField(page, 'eventLinkLabel', 'Event Link Label', "Defaults to 'More Info' if omitted"));
+            fields.push(renderTextField(page, 'location', 'Location', 'Venue name, etc.', true));
+            fields.push(renderTextField(page, 'locationShortName', 'Location Short Name', 'Replaces location name on home/now'));
+            fields.push(renderTextField(page, 'locationLink', 'Location Link', "The venue's website"));
+            fields.push(renderTextField(page, 'locationAddress', 'Location Address', "Ex. '123 Anywhere Street'"));
+            fields.push(renderTextField(page, 'locationCity', 'Location City', "Ex. 'New Haven, CT'"));
+            fields.push(renderTextField(page, 'thumbnail', 'Thumbnail', 'Flyer image URL'));
+            fields.push(renderTextField(page, 'thumbnailAlt', 'Thumbnail Alt', 'Describe the flyer'));
+            fields.push(renderCustomStyleField(page));
+            break;
     }
 
     return fields.join('');
@@ -244,17 +288,34 @@ function renderFieldsForType(page) {
 // Field Renderers
 // ============================================================================
 
-function renderTextField(page, fieldName, label) {
+function renderTextField(page, fieldName, label, placeholder, required) {
     const value = page.data[fieldName] || '';
     const escapedValue = value.replace(/"/g, '&quot;');
+    const placeholderText = placeholder !== undefined ? placeholder : label;
+    const labelText = required ? `${label} <span style="color: var(--color-red);">*</span>` : label;
 
     return `
         <div class="field-group">
-            <label>${label}</label>
+            <label>${labelText}</label>
             <input type="text"
                    value="${escapedValue}"
                    oninput="updateField('${page.id}', '${fieldName}', this.value)"
-                   placeholder="${label}">
+                   placeholder="${placeholderText}">
+        </div>
+    `;
+}
+
+function renderDateField(page, fieldName, label, required) {
+    const value = page.data[fieldName] || '';
+    const labelText = required ? `${label} <span style="color: var(--color-red);">*</span>` : label;
+
+    return `
+        <div class="field-group">
+            <label>${labelText}</label>
+            <input type="date"
+                   value="${value}"
+                   style="width: fit-content; max-width: 180px;"
+                   oninput="updateField('${page.id}', '${fieldName}', this.value)">
         </div>
     `;
 }
@@ -1222,6 +1283,36 @@ function generateFrontmatter(page) {
             if (data.thumbnail) lines.push(`thumbnail: ${quote(data.thumbnail)}`);
             if (data.notecardDark) lines.push(`notecardDark: true`);
             break;
+
+        case 'event':
+            if (data.title) lines.push(`title: ${quote(data.title)}`);
+            if (data.eventType) lines.push(`type: ${quote(data.eventType)}`);
+            if (data.eventDate) lines.push(`eventDate: ${quote(data.eventDate)}`);
+            if (data.eventEndDate) lines.push(`eventEndDate: ${quote(data.eventEndDate)}`);
+            if (data.eventTime) lines.push(`eventTime: ${quote(data.eventTime)}`);
+            if (data.eventLink) lines.push(`eventLink: ${quote(data.eventLink)}`);
+            if (data.eventLinkLabel) lines.push(`eventLinkLabel: ${quote(data.eventLinkLabel)}`);
+            if (data.location) lines.push(`location: ${quote(data.location)}`);
+            if (data.locationShortName) lines.push(`locationShortName: ${quote(data.locationShortName)}`);
+            if (data.locationLink) lines.push(`locationLink: ${quote(data.locationLink)}`);
+            if (data.locationAddress) lines.push(`locationAddress: ${quote(data.locationAddress)}`);
+            if (data.locationCity) lines.push(`locationCity: ${quote(data.locationCity)}`);
+            if (data.thumbnail) lines.push(`thumbnail: ${quote(data.thumbnail)}`);
+            if (data.thumbnailAlt) lines.push(`thumbnailAlt: ${quote(data.thumbnailAlt)}`);
+
+            if (data.customStyle && data.customStyle.enabled) {
+                if (data.customStyle.type === 'image') {
+                    if (data.customStyle.bgImage) {
+                        lines.push(`bgImage: ${data.customStyle.bgImage}`);
+                        if (data.customStyle.bgImageOpacity < 1.0) {
+                            lines.push(`bgImageOpacity: ${data.customStyle.bgImageOpacity}`);
+                        }
+                    }
+                } else {
+                    lines.push(generateCustomStyleYAML(data.customStyle));
+                }
+            }
+            break;
     }
 
     lines.push('---');
@@ -1266,6 +1357,7 @@ function generateFilename(page) {
             return page.data.date ? `${page.data.date}.md` : 'untitled.md';
         case 'artwork':
         case 'notes':
+        case 'event':
             const title = page.data.title || 'untitled';
             const slug = title.toLowerCase()
                 .replace(/[^\w\s-]/g, '')
