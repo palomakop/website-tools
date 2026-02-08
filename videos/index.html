@@ -15,10 +15,18 @@
 
             <div class="section-scroll">
                 <div class="section">
-                    <h2>Video Data</h2>
-                    <textarea id="tsvInput" placeholder="Paste row from video spreadsheet here..." style="height: 120px;"></textarea>
+                    <h2>Video Data or API Key</h2>
+                    <textarea id="tsvInput" placeholder="Paste row from video database, or paste API key..." style="height: 120px;"></textarea>
                     <div id="errorMessage" style="display: none; margin-top: 8px; padding: 8px; background: var(--bg-invalid); border: 1px solid var(--color-red-light); border-radius: 3px; font-size: 12px; color: var(--color-red-light);"></div>
-                    <button onclick="loadVideoData()">Load Video Data</button>
+                    <button onclick="loadVideoData(event)">Load Video Data</button>
+                </div>
+
+                <div class="section" id="databaseSection" style="display: none;">
+                    <div id="databaseStatus"></div>
+                </div>
+
+                <div class="section">
+                    <a href="https://grist.perfectsky.institute/o/docs/bbwBKGd1ZMiH/video-database" target="_blank" rel="noopener" style="display: block; text-align: center; padding: 8px; color: var(--color-blue-light); text-decoration: none; background: var(--bg-primary); border-radius: 3px; border: 1px solid var(--border-secondary); transition: border-color 0.2s; font-size: 12px;" onmouseover="this.style.borderColor='var(--color-blue-light)'" onmouseout="this.style.borderColor='var(--border-secondary)'">Open Video Database ↗</a>
                 </div>
             </div>
         </div>
@@ -36,6 +44,22 @@
             <div id="videosContainer" class="blocks-container"></div>
             <div id="emptyState" style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
                 <p>No videos loaded yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Browse Videos Modal -->
+    <div class="modal-overlay" id="browseModal" onclick="if(event.target === this) closeBrowseModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Browse Videos</div>
+                <button class="modal-close" onclick="closeBrowseModal()">×</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div id="browseVideosContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="createBlocksBtn" onclick="createSelectedBlocks()" disabled style="opacity: 0.5;">Create Blocks</button>
             </div>
         </div>
     </div>
