@@ -82,6 +82,14 @@ const TEMPLATES = {
             bgImageOpacity: 1.0,
             textColor: '#ffffef'
         }
+    },
+    update: {
+        date: new Date().toISOString().split('T')[0],
+        message: '',
+        rssMessage: '',
+        image: '',
+        imageIsTrue: false,
+        global: false
     }
 };
 
@@ -183,6 +191,8 @@ function renderPageCard(page) {
         typeLabel = 'Artwork';
     } else if (page.type === 'event') {
         typeLabel = 'Event Page';
+    } else if (page.type === 'update') {
+        typeLabel = page.data.global ? 'Global Update' : 'Update';
     }
 
     // Ensure colorIndex exists for pages loaded from localStorage before this feature
@@ -208,12 +218,13 @@ function renderPageCard(page) {
 
                 <div class="shortcode-output">
                     <div class="output-header">
-                        <div class="output-label">Frontmatter</div>
+                        <div class="output-label">${page.type === 'update' ? 'YAML' : 'Frontmatter'}</div>
                         <button class="copy-btn" onclick="copyOutput('${page.id}', 'frontmatter')">Copy</button>
                     </div>
                     <pre id="output-${page.id}">${generateFrontmatter(page)}</pre>
                 </div>
 
+                ${page.type !== 'update' ? `
                 <div class="shortcode-output">
                     <div class="output-header">
                         <div class="output-label">Suggested Filename</div>
@@ -221,6 +232,7 @@ function renderPageCard(page) {
                     </div>
                     <pre id="filename-${page.id}">${generateFilename(page)}</pre>
                 </div>
+                ` : ''}
             </div>
         </div>
     `;
@@ -235,6 +247,7 @@ function renderFieldsForType(page) {
             fields.push(renderTextField(page, 'thumbnail', 'Thumbnail URL'));
             fields.push(renderTextField(page, 'thumbnailAlt', 'Thumbnail Alt Text'));
             fields.push(renderTextField(page, 'date', 'Date'));
+            fields.push(renderPageUpdatesSection(page));
             break;
 
         case 'artwork':
@@ -247,6 +260,7 @@ function renderFieldsForType(page) {
             fields.push(renderCustomStyleField(page));
             fields.push(renderTextField(page, 'thumbnail', 'Thumbnail URL'));
             fields.push(renderTextField(page, 'thumbnailAlt', 'Thumbnail Alt Text'));
+            fields.push(renderPageUpdatesSection(page));
             break;
 
         case 'notes':
@@ -262,6 +276,7 @@ function renderFieldsForType(page) {
                     fields.push(renderNotecardTextColorField(page));
                 }
             }
+            fields.push(renderPageUpdatesSection(page));
             break;
 
         case 'event':
@@ -284,7 +299,20 @@ function renderFieldsForType(page) {
             if (page.data.customStyle && page.data.customStyle.enabled) {
                 fields.push(renderEventTextColorField(page));
             }
+            fields.push(renderPageUpdatesSection(page));
             break;
+
+        case 'update': {
+            const msgPlaceholder = page.data.global
+                ? 'Message with [link](/example)'
+                : 'Message with [link]() (empty url links to current page)';
+            fields.push(renderBooleanField(page, 'global', 'Global Update'));
+            fields.push(renderDateField(page, 'date', 'Date', true));
+            fields.push(renderTextField(page, 'message', 'Message', msgPlaceholder, true));
+            fields.push(renderTextField(page, 'rssMessage', 'RSS Message', 'Optional; supports markdown links'));
+            fields.push(renderStandaloneUpdateImageField(page));
+            break;
+        }
     }
 
     return fields.join('');
@@ -542,6 +570,93 @@ function renderEventTextColorField(page) {
     `;
 }
 
+function renderStandaloneUpdateImageField(page) {
+    const imageIsTrue = page.data.imageIsTrue || false;
+    const image = (page.data.image || '').replace(/"/g, '&quot;');
+
+    if (page.data.global) {
+        return `
+            <div class="field-group">
+                <label>Image</label>
+                <input type="text" value="${image}" placeholder="URL to image"
+                       oninput="updateField('${page.id}', 'image', this.value)">
+            </div>
+        `;
+    }
+
+    return `
+        <div class="field-group">
+            <label>Image</label>
+            <label>
+                <input type="checkbox" ${imageIsTrue ? 'checked' : ''}
+                       onchange="updateField('${page.id}', 'imageIsTrue', this.checked)">
+                Use page thumbnail
+            </label>
+            ${!imageIsTrue ? `
+            <input type="text" value="${image}" placeholder="URL to image"
+                   oninput="updateField('${page.id}', 'image', this.value)">
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderPageUpdatesSection(page) {
+    const updates = page.data.updates || [];
+
+    return `
+        <div class="page-updates-section">
+            <div class="page-updates-header">
+                <label>Updates</label>
+                <button onclick="addPageUpdate('${page.id}')">Add Update</button>
+            </div>
+            ${updates.map((update, idx) => renderPageUpdateItem(page, update, idx)).join('')}
+        </div>
+    `;
+}
+
+function renderPageUpdateItem(page, update, idx) {
+    const imageIsTrue = update.imageIsTrue || false;
+    const date = update.date || '';
+    const message = (update.message || '').replace(/"/g, '&quot;');
+    const rssMessage = (update.rssMessage || '').replace(/"/g, '&quot;');
+    const image = (update.image || '').replace(/"/g, '&quot;');
+
+    return `
+        <div class="page-update-item">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="field-group" style="flex: 1;">
+                    <label>Date <span style="color: var(--color-red);">*</span></label>
+                    <input type="date" value="${date}" style="width: fit-content; max-width: 180px;"
+                           oninput="updateUpdateField('${page.id}', ${idx}, 'date', this.value)">
+                </div>
+                <button class="remove-update-btn" style="align-self: flex-start;" onclick="removePageUpdate('${page.id}', ${idx})">Remove</button>
+            </div>
+            <div class="field-group">
+                <label>Message <span style="color: var(--color-red);">*</span></label>
+                <input type="text" value="${message}" placeholder="Message with [link]() (empty url links to current page)"
+                       oninput="updateUpdateField('${page.id}', ${idx}, 'message', this.value)">
+            </div>
+            <div class="field-group">
+                <label>RSS Message</label>
+                <input type="text" value="${rssMessage}" placeholder="Optional; supports markdown links"
+                       oninput="updateUpdateField('${page.id}', ${idx}, 'rssMessage', this.value)">
+            </div>
+            <div class="field-group">
+                <label>Image</label>
+                <label>
+                    <input type="checkbox" ${imageIsTrue ? 'checked' : ''}
+                           onchange="updateUpdateImageTrue('${page.id}', ${idx}, this.checked)">
+                    Use page thumbnail
+                </label>
+                ${!imageIsTrue ? `
+                <input type="text" value="${image}" placeholder="URL to image"
+                       oninput="updateUpdateField('${page.id}', ${idx}, 'image', this.value)">
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
 // ============================================================================
 // Field Update Functions
 // ============================================================================
@@ -582,7 +697,7 @@ function updateField(pageId, fieldPath, value) {
     updatePageOutput(pageId);
 
     // Re-render to show/hide conditional fields
-    if (fieldPath === 'notecardDark' || fieldPath === 'dark') {
+    if (fieldPath === 'notecardDark' || fieldPath === 'dark' || fieldPath === 'global' || fieldPath === 'imageIsTrue') {
         renderAllPages();
     }
 }
@@ -698,6 +813,56 @@ function removeGradientStop(pageId, index) {
     if (page.data.customStyle.gradientStops.length <= 2) return;
 
     page.data.customStyle.gradientStops.splice(index, 1);
+    saveToLocalStorage();
+    renderAllPages();
+}
+
+// ============================================================================
+// Page Update Management
+// ============================================================================
+
+function addPageUpdate(pageId) {
+    const page = pages.find(p => p.id === pageId);
+    if (!page) return;
+
+    if (!page.data.updates) page.data.updates = [];
+    page.data.updates.push({
+        date: new Date().toISOString().split('T')[0],
+        message: '',
+        rssMessage: '',
+        image: '',
+        imageIsTrue: false
+    });
+
+    saveToLocalStorage();
+    renderAllPages();
+}
+
+function removePageUpdate(pageId, index) {
+    const page = pages.find(p => p.id === pageId);
+    if (!page || !page.data.updates) return;
+
+    page.data.updates.splice(index, 1);
+    saveToLocalStorage();
+    renderAllPages();
+}
+
+function updateUpdateField(pageId, updateIndex, field, value) {
+    const page = pages.find(p => p.id === pageId);
+    if (!page || !page.data.updates || !page.data.updates[updateIndex]) return;
+
+    page.data.updates[updateIndex][field] = value;
+    saveToLocalStorage();
+    updatePageOutput(pageId);
+}
+
+function updateUpdateImageTrue(pageId, updateIndex, isTrue) {
+    const page = pages.find(p => p.id === pageId);
+    if (!page || !page.data.updates || !page.data.updates[updateIndex]) return;
+
+    page.data.updates[updateIndex].imageIsTrue = isTrue;
+    if (isTrue) page.data.updates[updateIndex].image = '';
+
     saveToLocalStorage();
     renderAllPages();
 }
@@ -1276,6 +1441,10 @@ function hsbToRgb(h, s, b) {
 // ============================================================================
 
 function generateFrontmatter(page) {
+    if (page.type === 'update') {
+        return generateUpdateOutput(page);
+    }
+
     const lines = ['---'];
     const data = page.data;
 
@@ -1293,6 +1462,7 @@ function generateFrontmatter(page) {
             if (data.thumbnail) lines.push(`thumbnail: ${quote(data.thumbnail)}`);
             if (data.thumbnailAlt) lines.push(`thumbnailAlt: ${quote(data.thumbnailAlt)}`);
             if (data.date) lines.push(`date: ${quote(data.date)}`);
+            if (data.updates && data.updates.length > 0) lines.push(generatePageUpdatesYAML(data.updates));
             break;
 
         case 'artwork':
@@ -1320,6 +1490,7 @@ function generateFrontmatter(page) {
 
             if (data.thumbnail) lines.push(`thumbnail: ${data.thumbnail}`);
             if (data.thumbnailAlt) lines.push(`thumbnailAlt: ${data.thumbnailAlt}`);
+            if (data.updates && data.updates.length > 0) lines.push(generatePageUpdatesYAML(data.updates));
             break;
 
         case 'notes':
@@ -1336,6 +1507,7 @@ function generateFrontmatter(page) {
             if (data.dark) lines.push(`dark: true`);
             if (data.thumbnail) lines.push(`thumbnail: ${quote(data.thumbnail)}`);
             if (data.notecardDark) lines.push(`notecardDark: true`);
+            if (data.updates && data.updates.length > 0) lines.push(generatePageUpdatesYAML(data.updates));
             break;
 
         case 'event':
@@ -1367,6 +1539,7 @@ function generateFrontmatter(page) {
                     lines.push(generateEventCustomStyleYAML(data.customStyle));
                 }
             }
+            if (data.updates && data.updates.length > 0) lines.push(generatePageUpdatesYAML(data.updates));
             break;
     }
 
@@ -1426,12 +1599,59 @@ function generateNotecardStyleYAML(customStyle, notecardDark, notecardTextColor)
     return `notecardStyle: '${style}'`;
 }
 
+function generateUpdateOutput(page) {
+    const data = page.data;
+    const dq = (str) => `"${(str || '').replace(/"/g, '\\"')}"`;
+    const lines = [];
+
+    if (data.global) {
+        // List item for globalUpdates.yaml
+        if (data.date) lines.push(`- date: ${dq(data.date)}`);
+        if (data.message) lines.push(`  message: ${dq(data.message)}`);
+        if (data.rssMessage) lines.push(`  rssMessage: ${dq(data.rssMessage)}`);
+        if (data.image) lines.push(`  image: ${data.image}`);
+    } else {
+        // Wrapped in updates: for pasting into a page's frontmatter
+        lines.push('updates:');
+        lines.push(`  - date: ${dq(data.date || '')}`);
+        if (data.message) lines.push(`    message: ${dq(data.message)}`);
+        if (data.rssMessage) lines.push(`    rssMessage: ${dq(data.rssMessage)}`);
+        if (data.imageIsTrue) {
+            lines.push(`    image: True`);
+        } else if (data.image) {
+            lines.push(`    image: ${data.image}`);
+        }
+    }
+
+    return lines.join('\n');
+}
+
+function generatePageUpdatesYAML(updates) {
+    const dq = (str) => `"${(str || '').replace(/"/g, '\\"')}"`;
+    const lines = ['updates:'];
+
+    updates.forEach(update => {
+        lines.push(`  - date: ${dq(update.date || '')}`);
+        if (update.message) lines.push(`    message: ${dq(update.message)}`);
+        if (update.rssMessage) lines.push(`    rssMessage: ${dq(update.rssMessage)}`);
+        if (update.imageIsTrue) {
+            lines.push(`    image: True`);
+        } else if (update.image) {
+            lines.push(`    image: ${update.image}`);
+        }
+    });
+
+    return lines.join('\n');
+}
+
 function generateFilename(page) {
     switch (page.type) {
         case 'blog':
             return page.data.date ? `${page.data.date}.md` : 'untitled.md';
         case 'event':
             return page.data.eventDate ? `${page.data.eventDate}.md` : 'untitled.md';
+        case 'update':
+            return page.data.date ? `${page.data.date}-update.yaml` : 'update.yaml';
         case 'artwork':
         case 'notes':
             const title = page.data.title || 'untitled';
