@@ -6,6 +6,14 @@ let pages = [];
 let currentColorPickerCallback = null;
 let colorIndex = 0;
 
+function localDateString() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 const BORDER_COLORS = [
     'var(--color-accent)',
     'var(--color-blue)',
@@ -20,7 +28,7 @@ const TEMPLATES = {
         title: '',
         thumbnail: '',
         thumbnailAlt: '',
-        date: new Date().toISOString().split('T')[0]
+        date: localDateString()
     },
     artwork: {
         title: '',
@@ -84,7 +92,7 @@ const TEMPLATES = {
         }
     },
     update: {
-        date: new Date().toISOString().split('T')[0],
+        date: localDateString(),
         message: '',
         rssMessage: '',
         image: '',
@@ -827,7 +835,7 @@ function addPageUpdate(pageId) {
 
     if (!page.data.updates) page.data.updates = [];
     page.data.updates.push({
-        date: new Date().toISOString().split('T')[0],
+        date: localDateString(),
         message: '',
         rssMessage: '',
         image: '',
