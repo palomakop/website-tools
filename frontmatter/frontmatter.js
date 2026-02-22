@@ -292,7 +292,7 @@ function renderFieldsForType(page) {
             fields.push(renderTextField(page, 'eventType', 'Event Type', 'Exhibition, Live Show, etc.', true));
             fields.push(renderDateField(page, 'eventDate', 'Event Date', true));
             fields.push(renderDateField(page, 'eventEndDate', 'Event End Date', false));
-            fields.push(renderTextField(page, 'eventTime', 'Event Time', "Ex. '2pm'"));
+            fields.push(renderTextField(page, 'eventTime', 'Event Time', "Ex. '2pm'; include time zone for online events"));
             fields.push(renderTextField(page, 'eventLink', 'Event Link', 'A link to more info, tickets, etc.'));
             fields.push(renderTextField(page, 'eventLinkLabel', 'Event Link Label', "Defaults to 'More Info' if omitted"));
             fields.push(renderTextField(page, 'location', 'Location', 'Venue name, etc.', true));
