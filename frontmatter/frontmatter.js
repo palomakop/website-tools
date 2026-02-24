@@ -98,6 +98,16 @@ const TEMPLATES = {
         image: '',
         imageIsTrue: false,
         global: false
+    },
+    style: {
+        customStyle: {
+            enabled: true,
+            type: 'solid',
+            solidColor: '#f1f0e9',
+            gradientStops: ['#d5dcdf', '#dddddd', '#d0dada'],
+            bgImage: '',
+            bgImageOpacity: 1.0
+        }
     }
 };
 
@@ -201,6 +211,8 @@ function renderPageCard(page) {
         typeLabel = 'Event Page';
     } else if (page.type === 'update') {
         typeLabel = page.data.global ? 'Global Update' : 'Update';
+    } else if (page.type === 'style') {
+        typeLabel = 'Custom Style';
     }
 
     // Ensure colorIndex exists for pages loaded from localStorage before this feature
@@ -226,7 +238,7 @@ function renderPageCard(page) {
 
                 <div class="shortcode-output">
                     <div class="output-header">
-                        <div class="output-label">${page.type === 'update' ? 'YAML' : 'Frontmatter'}</div>
+                        <div class="output-label">${page.type === 'update' ? 'YAML' : page.type === 'style' ? 'Custom Style' : 'Frontmatter'}</div>
                         <button class="copy-btn" onclick="copyOutput('${page.id}', 'frontmatter')">Copy</button>
                     </div>
                     <pre id="output-${page.id}">${generateFrontmatter(page)}</pre>
@@ -321,6 +333,10 @@ function renderFieldsForType(page) {
             fields.push(renderStandaloneUpdateImageField(page));
             break;
         }
+
+        case 'style':
+            fields.push(renderCustomStyleField(page));
+            break;
     }
 
     return fields.join('');
@@ -1453,6 +1469,10 @@ function generateFrontmatter(page) {
         return generateUpdateOutput(page);
     }
 
+    if (page.type === 'style') {
+        return generateStyleOutput(page);
+    }
+
     const lines = ['---'];
     const data = page.data;
 
@@ -1607,6 +1627,15 @@ function generateNotecardStyleYAML(customStyle, notecardDark, notecardTextColor)
     return `notecardStyle: '${style}'`;
 }
 
+function generateStyleOutput(page) {
+    const customStyle = page.data.customStyle;
+    if (!customStyle || !customStyle.enabled) {
+        return '';
+    }
+
+    return generateCustomStyleYAML(customStyle);
+}
+
 function generateUpdateOutput(page) {
     const data = page.data;
     const dq = (str) => `"${(str || '').replace(/"/g, '\\"')}"`;
@@ -1660,6 +1689,9 @@ function generateFilename(page) {
             return page.data.eventDate ? `${page.data.eventDate}.md` : 'untitled.md';
         case 'update':
             return page.data.date ? `${page.data.date}-update.yaml` : 'update.yaml';
+        case 'style':
+            const styleType = page.data.customStyle?.type || 'style';
+            return `custom-${styleType}-style.txt`;
         case 'artwork':
         case 'notes':
             const title = page.data.title || 'untitled';
