@@ -903,13 +903,13 @@ input[type="checkbox"]:focus {
     background: var(--bg-primary);
     border-radius: 4px;
     padding: 20px;
-    min-height: 300px;
     overflow: hidden;
+    height: clamp(200px, 40vh, 400px);
 }
 
 .modal-image-container img {
     max-width: 100%;
-    max-height: 400px;
+    max-height: 100%;
     width: auto;
     height: auto;
     object-fit: contain;
@@ -953,6 +953,11 @@ input[type="checkbox"]:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.modal-footer button:disabled {
+    opacity: 0.4;
+    pointer-events: none;
 }
 
 .modal-nav-buttons {

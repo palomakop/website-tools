@@ -1678,7 +1678,9 @@
                         <div class="context-menu-item" onclick="createImageBlockFromContext()">Create Image Block</div>
                         <div class="context-menu-item" onclick="createGalleryBlockFromContext()">Create Gallery Block</div>
                         <div class="context-menu-separator"></div>
-                        <div class="context-menu-item" onclick="openAltTextModal()">Edit Alt Text...</div>
+                        <div class="context-menu-item" onclick="openAltTextModal('staging')">Edit Alt Text...</div>
+                        <div class="context-menu-separator"></div>
+                        <div class="context-menu-item" onclick="copyUrlFromContext()">Copy URL</div>
                         <div class="context-menu-separator"></div>
                         <div class="context-menu-item" onclick="deleteFromContext()">Delete</div>
                     `;
@@ -1701,6 +1703,10 @@
                 } else {
                     menuHTML = `
                         <div class="context-menu-item" onclick="sendToStagingFromContext()">Send to Staging</div>
+                        <div class="context-menu-separator"></div>
+                        <div class="context-menu-item" onclick="openAltTextModal('block')">Edit Alt Text...</div>
+                        <div class="context-menu-separator"></div>
+                        <div class="context-menu-item" onclick="copyUrlFromContext()">Copy URL</div>
                         <div class="context-menu-separator"></div>
                         <div class="context-menu-item" onclick="deleteFromContext()">Delete</div>
                     `;
@@ -1845,25 +1851,78 @@
             }
         }
 
+        function copyUrlFromContext() {
+            hideContextMenu();
+
+            if (!contextMenuTarget) return;
+
+            const url = contextMenuTarget.dataset.url;
+            if (!url) return;
+
+            // Copy URL to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                // Show visual feedback with background color fade
+                const originalBackground = contextMenuTarget.style.backgroundColor;
+                const originalTransition = contextMenuTarget.style.transition;
+
+                contextMenuTarget.style.transition = 'background-color 0.3s ease';
+                contextMenuTarget.style.backgroundColor = 'var(--color-green-light)';
+
+                setTimeout(() => {
+                    contextMenuTarget.style.backgroundColor = originalBackground;
+                    setTimeout(() => {
+                        contextMenuTarget.style.transition = originalTransition;
+                    }, 300);
+                }, 400);
+            }).catch(err => {
+                console.error('Failed to copy URL:', err);
+                alert('Failed to copy URL to clipboard');
+            });
+        }
+
         // Alt text modal functionality
         let currentModalIndex = 0;
         let modalThumbnails = [];
+        let modalContext = 'staging'; // 'staging' or 'block'
 
-        function openAltTextModal() {
+        function openAltTextModal(context = 'staging') {
             hideContextMenu();
+            modalContext = context;
 
-            // Get all thumbnails in staging area
-            modalThumbnails = Array.from(document.querySelectorAll('#stagingArea .thumbnail'));
+            if (context === 'staging') {
+                // Get all thumbnails in staging area
+                modalThumbnails = Array.from(document.querySelectorAll('#stagingArea .thumbnail'));
 
-            if (modalThumbnails.length === 0) return;
+                if (modalThumbnails.length === 0) return;
 
-            // Find the index of the first selected thumbnail
-            const selectedArray = Array.from(selectedThumbnails);
-            if (selectedArray.length > 0) {
-                currentModalIndex = modalThumbnails.indexOf(selectedArray[0]);
+                // Find the index of the first selected thumbnail or context target
+                if (contextMenuTarget && contextMenuTarget.classList.contains('thumbnail')) {
+                    currentModalIndex = modalThumbnails.indexOf(contextMenuTarget);
+                    if (currentModalIndex === -1) currentModalIndex = 0;
+                } else {
+                    const selectedArray = Array.from(selectedThumbnails);
+                    if (selectedArray.length > 0) {
+                        currentModalIndex = modalThumbnails.indexOf(selectedArray[0]);
+                        if (currentModalIndex === -1) currentModalIndex = 0;
+                    } else {
+                        currentModalIndex = 0;
+                    }
+                }
+            } else if (context === 'block') {
+                // Get all image-rows from the specific block
+                if (!contextMenuTarget || !contextMenuTarget.classList.contains('image-row')) return;
+
+                const blockId = contextMenuTarget.dataset.blockId;
+                const dropZone = document.querySelector(`[data-block-id="${blockId}"]`);
+                if (!dropZone) return;
+
+                modalThumbnails = Array.from(dropZone.querySelectorAll('.image-row'));
+
+                if (modalThumbnails.length === 0) return;
+
+                // Find the index of the context target
+                currentModalIndex = modalThumbnails.indexOf(contextMenuTarget);
                 if (currentModalIndex === -1) currentModalIndex = 0;
-            } else {
-                currentModalIndex = 0;
             }
 
             showModalForCurrentIndex();
@@ -1873,23 +1932,56 @@
         function showModalForCurrentIndex() {
             if (modalThumbnails.length === 0) return;
 
-            const thumbnail = modalThumbnails[currentModalIndex];
-            const url = thumbnail.dataset.url;
-            const description = thumbnail.dataset.description || '';
+            const element = modalThumbnails[currentModalIndex];
+            const url = element.dataset.url;
+            let description = '';
+
+            if (modalContext === 'staging') {
+                description = element.dataset.description || '';
+            } else if (modalContext === 'block') {
+                // For image-rows, get description from the input field
+                const descInput = element.querySelector('.input-description');
+                description = descInput ? descInput.value : '';
+            }
 
             document.getElementById('modalImage').src = url;
             document.getElementById('modalAltText').value = description;
 
             // Update title with current position
             document.querySelector('.modal-title').textContent = `Edit Alt Text (${currentModalIndex + 1} of ${modalThumbnails.length})`;
+
+            // Disable navigation buttons if only one image
+            const prevBtn = document.querySelector('#altTextModal .modal-footer button:first-child');
+            const nextBtn = document.querySelector('#altTextModal .modal-footer button:last-child');
+
+            if (modalThumbnails.length === 1) {
+                if (prevBtn) prevBtn.disabled = true;
+                if (nextBtn) nextBtn.disabled = true;
+            } else {
+                if (prevBtn) prevBtn.disabled = false;
+                if (nextBtn) nextBtn.disabled = false;
+            }
         }
 
         // Autosave alt text on input
         document.getElementById('modalAltText').addEventListener('input', function() {
             if (modalThumbnails.length === 0) return;
-            const thumbnail = modalThumbnails[currentModalIndex];
-            thumbnail.dataset.description = this.value;
-            saveState();
+            const element = modalThumbnails[currentModalIndex];
+
+            if (modalContext === 'staging') {
+                element.dataset.description = this.value;
+                saveState();
+            } else if (modalContext === 'block') {
+                // For image-rows, update the input field
+                const descInput = element.querySelector('.input-description');
+                if (descInput) {
+                    descInput.value = this.value;
+                    // Trigger the input event to update the shortcode
+                    const blockId = element.dataset.blockId;
+                    updateShortcode(blockId);
+                    saveState();
+                }
+            }
         });
 
         function closeAltTextModal() {
