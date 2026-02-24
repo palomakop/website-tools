@@ -1856,12 +1856,30 @@ input[type="checkbox"]:focus {
     overflow: hidden;
     min-height: 40px;
     max-height: 300px;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    background-color: #141414;
+}
+
+.image-preview-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+}
+
+.image-preview-text {
+    position: relative;
+    z-index: 1;
+    font-size: 1.1rem;
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
     font-size: 1.1rem;
     font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
 }

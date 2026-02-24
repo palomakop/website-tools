@@ -539,7 +539,10 @@ function renderImageEditor(page) {
 
     return `
         <div class="style-editor">
-            <div class="image-preview-container" id="image-preview-${page.id}" style="background-image: ${imageLoaded && bgImage ? `url(${bgImage})` : 'none'}; opacity: ${opacity};">${textPreview}</div>
+            <div class="image-preview-container" id="image-preview-${page.id}">
+                <div class="image-preview-bg" style="background-image: ${imageLoaded && bgImage ? `url(${bgImage})` : 'none'}; opacity: ${opacity};"></div>
+                ${textPreview ? `<div class="image-preview-text">${textPreview}</div>` : ''}
+            </div>
             <div class="field-group">
                 <label>Image URL</label>
                 <input type="text"
@@ -994,9 +997,12 @@ function loadImagePreview(pageId) {
     img.onload = () => {
         // Image loaded successfully
         page.data.customStyle.imageLoaded = true;
-        const previewEl = document.getElementById(`image-preview-${pageId}`);
-        if (previewEl) {
-            previewEl.style.backgroundImage = `url(${imageUrl})`;
+        const previewContainer = document.getElementById(`image-preview-${pageId}`);
+        if (previewContainer) {
+            const bgEl = previewContainer.querySelector('.image-preview-bg');
+            if (bgEl) {
+                bgEl.style.backgroundImage = `url(${imageUrl})`;
+            }
         }
         saveToLocalStorage();
         updatePageOutput(pageId);
@@ -1013,9 +1019,12 @@ function updateImageOpacity(pageId, opacity) {
 
     page.data.customStyle.bgImageOpacity = opacity;
 
-    const previewEl = document.getElementById(`image-preview-${pageId}`);
-    if (previewEl) {
-        previewEl.style.opacity = opacity;
+    const previewContainer = document.getElementById(`image-preview-${pageId}`);
+    if (previewContainer) {
+        const bgEl = previewContainer.querySelector('.image-preview-bg');
+        if (bgEl) {
+            bgEl.style.opacity = opacity;
+        }
     }
 
     saveToLocalStorage();
@@ -1207,7 +1216,7 @@ function updateColorPreviewInDOM(pageId, field, stopIndex, newColor) {
         // Update the text color in the style preview boxes
         const styleEditor = card.querySelector('.style-editor');
         if (styleEditor) {
-            const previewText = styleEditor.querySelector('.solid-color-preview span, .gradient-preview span, .image-preview-container span');
+            const previewText = styleEditor.querySelector('.solid-color-preview span, .gradient-preview span, .image-preview-text span');
             if (previewText) {
                 previewText.style.color = newColor;
             }
