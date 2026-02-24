@@ -433,13 +433,16 @@ function renderCustomStyleField(page) {
         `;
     }
 
+    // Only show remove button if not a 'style' template
+    const showRemoveButton = page.type !== 'style';
+
     return `
         <div class="field-group custom-style-field">
             <div class="custom-style-header">
                 <label>Custom Style</label>
                 <div class="custom-style-actions">
                     <button class="save-style-btn" onclick="openSaveStyleModal('${page.id}')">Save</button>
-                    <button class="remove-style-btn" onclick="disableCustomStyle('${page.id}')">Remove</button>
+                    ${showRemoveButton ? `<button class="remove-style-btn" onclick="disableCustomStyle('${page.id}')">Remove</button>` : ''}
                 </div>
             </div>
 
@@ -2171,7 +2174,7 @@ function setupDropTargetsForPinnedColors() {
     });
 
     // Make all style previews drop targets for saved styles, pinned colors, and pinned gradients
-    document.querySelectorAll('.gradient-preview, .solid-color-preview, .image-preview').forEach(preview => {
+    document.querySelectorAll('.gradient-preview, .solid-color-preview, .image-preview-container').forEach(preview => {
         preview.addEventListener('dragover', (e) => {
             const hasSavedStyle = e.dataTransfer.types.includes('application/saved-style');
             const hasPinnedColor = e.dataTransfer.types.includes('application/pinned-color');
@@ -2227,7 +2230,7 @@ function setupDropTargetsForPinnedColors() {
                     page.data.customStyle.type = 'image';
                     page.data.customStyle.bgImage = style.bgImage;
                     page.data.customStyle.bgImageOpacity = style.bgImageOpacity;
-                    page.data.customStyle.imageLoaded = false; // Will need to reload
+                    page.data.customStyle.imageLoaded = true; // Auto-load the image
                 }
             }
             // Handle pinned colors - switch to solid color type
