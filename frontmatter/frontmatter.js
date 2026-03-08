@@ -97,6 +97,7 @@ const TEMPLATES = {
         rssMessage: '',
         image: '',
         imageIsTrue: false,
+        anchor: '',
         global: false
     },
     style: {
@@ -329,6 +330,9 @@ function renderFieldsForType(page) {
             fields.push(renderBooleanField(page, 'global', 'Global Update'));
             fields.push(renderDateField(page, 'date', 'Date', true));
             fields.push(renderTextField(page, 'message', 'Message', msgPlaceholder, true));
+            if (!page.data.global) {
+                fields.push(renderTextField(page, 'anchor', 'Anchor Link', "Optional; ex. '#new-section'"));
+            }
             fields.push(renderTextField(page, 'rssMessage', 'RSS Message', 'Optional; supports markdown links'));
             fields.push(renderStandaloneUpdateImageField(page));
             break;
@@ -608,7 +612,7 @@ function renderStandaloneUpdateImageField(page) {
         return `
             <div class="field-group">
                 <label>Image</label>
-                <input type="text" value="${image}" placeholder="URL to image"
+                <input type="text" value="${image}" placeholder="Optional; URL to image"
                        oninput="updateField('${page.id}', 'image', this.value)">
             </div>
         `;
@@ -623,7 +627,7 @@ function renderStandaloneUpdateImageField(page) {
                 Use page thumbnail
             </label>
             ${!imageIsTrue ? `
-            <input type="text" value="${image}" placeholder="URL to image"
+            <input type="text" value="${image}" placeholder="Optional; URL to image"
                    oninput="updateField('${page.id}', 'image', this.value)">
             ` : ''}
         </div>
@@ -648,6 +652,7 @@ function renderPageUpdateItem(page, update, idx) {
     const imageIsTrue = update.imageIsTrue || false;
     const date = update.date || '';
     const message = (update.message || '').replace(/"/g, '&quot;');
+    const anchor = (update.anchor || '').replace(/"/g, '&quot;');
     const rssMessage = (update.rssMessage || '').replace(/"/g, '&quot;');
     const image = (update.image || '').replace(/"/g, '&quot;');
 
@@ -667,6 +672,11 @@ function renderPageUpdateItem(page, update, idx) {
                        oninput="updateUpdateField('${page.id}', ${idx}, 'message', this.value)">
             </div>
             <div class="field-group">
+                <label>Anchor Link</label>
+                <input type="text" value="${anchor}" placeholder="Optional; ex. '#new-section'"
+                       oninput="updateUpdateField('${page.id}', ${idx}, 'anchor', this.value)">
+            </div>
+            <div class="field-group">
                 <label>RSS Message</label>
                 <input type="text" value="${rssMessage}" placeholder="Optional; supports markdown links"
                        oninput="updateUpdateField('${page.id}', ${idx}, 'rssMessage', this.value)">
@@ -679,7 +689,7 @@ function renderPageUpdateItem(page, update, idx) {
                     Use page thumbnail
                 </label>
                 ${!imageIsTrue ? `
-                <input type="text" value="${image}" placeholder="URL to image"
+                <input type="text" value="${image}" placeholder="Optional; URL to image"
                        oninput="updateUpdateField('${page.id}', ${idx}, 'image', this.value)">
                 ` : ''}
             </div>
@@ -859,6 +869,7 @@ function addPageUpdate(pageId) {
     page.data.updates.push({
         date: localDateString(),
         message: '',
+        anchor: '',
         rssMessage: '',
         image: '',
         imageIsTrue: false
@@ -1664,6 +1675,7 @@ function generateUpdateOutput(page) {
         lines.push('updates:');
         lines.push(`  - date: ${dq(data.date || '')}`);
         if (data.message) lines.push(`    message: ${dq(data.message)}`);
+        if (data.anchor) lines.push(`    anchor: ${dq(data.anchor)}`);
         if (data.rssMessage) lines.push(`    rssMessage: ${dq(data.rssMessage)}`);
         if (data.imageIsTrue) {
             lines.push(`    image: True`);
@@ -1682,6 +1694,7 @@ function generatePageUpdatesYAML(updates) {
     updates.forEach(update => {
         lines.push(`  - date: ${dq(update.date || '')}`);
         if (update.message) lines.push(`    message: ${dq(update.message)}`);
+        if (update.anchor) lines.push(`    anchor: ${dq(update.anchor)}`);
         if (update.rssMessage) lines.push(`    rssMessage: ${dq(update.rssMessage)}`);
         if (update.imageIsTrue) {
             lines.push(`    image: True`);
