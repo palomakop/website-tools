@@ -1231,7 +1231,7 @@ input[type="checkbox"]:focus {
     border-right: 1px solid var(--border-primary);
     padding: 15px;
     overflow-y: auto;
-    display: none; /* Hidden by default, shown when there are pinned colors */
+    display: none; /* Hidden by default, shown when there are pinned styles */
     transition: background 0.2s ease;
 }
 
@@ -1356,6 +1356,49 @@ input[type="checkbox"]:focus {
 }
 
 .pinned-color-unpin:hover svg {
+    fill: var(--text-primary);
+}
+
+.pinned-style-copy {
+    position: absolute;
+    top: 4px;
+    right: 26px;
+    padding: 2px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 2px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.pinned-gradient-item:hover .pinned-style-copy {
+    display: flex;
+}
+
+.pinned-style-copy svg {
+    width: 12px;
+    height: 12px;
+    fill: var(--text-secondary);
+}
+
+.pinned-style-copy:hover {
+    background: var(--color-blue-light);
+    border-color: var(--color-blue-light);
+}
+
+.pinned-style-copy:hover svg {
+    fill: var(--text-primary);
+}
+
+.pinned-style-copy.copied {
+    background: var(--color-green);
+    border-color: var(--color-green);
+}
+
+.pinned-style-copy.copied svg {
     fill: var(--text-primary);
 }
 
@@ -1921,23 +1964,44 @@ input[type="checkbox"]:focus {
     margin-bottom: 10px;
 }
 
-.hex-input {
+.hex-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     width: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 3px;
     padding: 6px 8px;
+    transition: border-color 0.15s ease;
+}
+
+.hex-input-wrapper:focus-within {
+    border-color: var(--color-blue-light);
+}
+
+.hex-prefix {
+    font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    user-select: none;
+}
+
+.hex-input {
+    flex: 1;
+    padding: 0;
     font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-primary);
-    background: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 3px;
-    text-align: center;
-    transition: border-color 0.15s ease;
+    background: transparent;
+    border: none;
+    text-align: left;
 }
 
 .hex-input:focus {
     outline: none;
-    border-color: var(--color-blue-light);
 }
 
 .hex-input::selection {

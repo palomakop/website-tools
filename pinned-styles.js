@@ -1,4 +1,4 @@
-class PinnedColors extends HTMLElement {
+class PinnedStyles extends HTMLElement {
     constructor() {
         super();
         this.pinnedColorIds = [];
@@ -11,7 +11,7 @@ class PinnedColors extends HTMLElement {
         this.render();
 
         // Listen for updates from other tools
-        window.addEventListener('pinnedColorsUpdated', () => {
+        window.addEventListener('pinnedStylesUpdated', () => {
             this.loadFromLocalStorage();
             this.render();
         });
@@ -172,7 +172,7 @@ class PinnedColors extends HTMLElement {
     }
 
     clearAllPins() {
-        if (!confirm('Clear all pinned colors, gradients, and saved styles?')) {
+        if (!confirm('Clear all pinned styles?')) {
             return;
         }
 
@@ -194,7 +194,7 @@ class PinnedColors extends HTMLElement {
         localStorage.setItem('websitetools-colors', JSON.stringify(data));
 
         // Dispatch event for other tools to listen to
-        window.dispatchEvent(new CustomEvent('pinnedColorsUpdated'));
+        window.dispatchEvent(new CustomEvent('pinnedStylesUpdated'));
     }
 
     setupDragHandlers() {
@@ -296,10 +296,10 @@ class PinnedColors extends HTMLElement {
 
         let html = `
             <div class="sidebar-header">
-                <h3>Pinned Colors</h3>
+                <h3>Pinned Styles</h3>
                 <button class="clear-pins-btn" title="Clear all pins">Clear</button>
             </div>
-            <div id="pinnedColorsDisplay">
+            <div id="pinnedStylesDisplay">
         `;
 
         // Render each group
@@ -371,6 +371,15 @@ class PinnedColors extends HTMLElement {
                     infoText = 'Background Image';
                 }
 
+                let copyValue = '';
+                if (style.type === 'solid') {
+                    copyValue = style.solidColor;
+                } else if (style.type === 'gradient') {
+                    copyValue = `radial-gradient(${style.gradientStops.join(', ')})`;
+                } else if (style.type === 'image') {
+                    copyValue = style.bgImage;
+                }
+
                 html += `
                     <div class="pinned-gradient-item" draggable="true" data-style-id="${style.id}" data-drag-type="saved-style" title="${style.name}">
                         <div class="pinned-gradient-preview" style="${previewStyle}"></div>
@@ -378,6 +387,11 @@ class PinnedColors extends HTMLElement {
                             <div class="pinned-gradient-name">${style.name}</div>
                             <div class="pinned-gradient-stops">${infoText}</div>
                         </div>
+                        <button class="pinned-style-copy" data-copy-value="${copyValue.replace(/"/g, '&quot;')}" title="Copy">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                        </button>
                         <button class="pinned-color-unpin" data-style-id="${style.id}" title="Delete">
                             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -417,8 +431,40 @@ class PinnedColors extends HTMLElement {
             });
         });
 
+        this.querySelectorAll('.pinned-style-copy').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const copyValue = btn.dataset.copyValue;
+                this.copyToClipboard(copyValue, btn);
+            });
+        });
+
         this.setupDragHandlers();
+    }
+
+    copyToClipboard(text, button) {
+        navigator.clipboard.writeText(text).then(() => {
+            this.showCopyFeedback(button);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
+    }
+
+    showCopyFeedback(button) {
+        button.classList.add('copied');
+
+        // Store original SVG
+        const svg = button.querySelector('svg');
+        const originalPath = svg.innerHTML;
+
+        // Replace with checkmark
+        svg.innerHTML = '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>';
+
+        setTimeout(() => {
+            button.classList.remove('copied');
+            svg.innerHTML = originalPath;
+        }, 1500);
     }
 }
 
-customElements.define('pinned-colors', PinnedColors);
+customElements.define('pinned-styles', PinnedStyles);

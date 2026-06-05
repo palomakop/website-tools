@@ -987,8 +987,8 @@ function saveStyleToSidebar() {
     data.savedStyles = savedStyles;
     localStorage.setItem('websitetools-colors', JSON.stringify(data));
 
-    // Dispatch event to update pinned colors component
-    window.dispatchEvent(new CustomEvent('pinnedColorsUpdated'));
+    // Dispatch event to update pinned styles component
+    window.dispatchEvent(new CustomEvent('pinnedStylesUpdated'));
 
     closeSaveStyleModal();
 }
@@ -1069,6 +1069,20 @@ function openColorPicker(pageId, field, currentColor, stopIndex, evt) {
 
     currentPickerId = pickerId;
 
+    // Get the actual current color from page data instead of the stale parameter
+    const page = pages.find(p => p.id === pageId);
+    if (page) {
+        if (field === 'solidColor') {
+            currentColor = page.data.customStyle.solidColor || currentColor;
+        } else if (field === 'gradientStop') {
+            currentColor = page.data.customStyle.gradientStops[stopIndex] || currentColor;
+        } else if (field === 'notecardTextColor') {
+            currentColor = page.data.notecardTextColor || currentColor;
+        } else if (field === 'eventTextColor') {
+            currentColor = page.data.customStyle.textColor || currentColor;
+        }
+    }
+
     // Parse current color
     const rgb = hexToRgb(currentColor);
     const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
@@ -1110,12 +1124,15 @@ function openColorPicker(pageId, field, currentColor, stopIndex, evt) {
     picker.id = pickerId;
     picker.innerHTML = `
         <div class="color-picker-header">
-            <input type="text"
-                   class="hex-input"
-                   id="hexInput-${pickerId}"
-                   value="${currentColor}"
-                   maxlength="7"
-                   placeholder="#000000">
+            <div class="hex-input-wrapper">
+                <span class="hex-prefix">#</span>
+                <input type="text"
+                       class="hex-input"
+                       id="hexInput-${pickerId}"
+                       value="${currentColor.replace('#', '')}"
+                       maxlength="6"
+                       placeholder="000000">
+            </div>
         </div>
         <div class="color-picker-body">
             <div class="color-xy-pad" id="xyPad-${pickerId}">
@@ -1164,7 +1181,7 @@ function updateColorPreviewInDOM(pageId, field, stopIndex, newColor) {
     const picker = document.getElementById(currentPickerId);
     if (picker) {
         const hexInput = picker.querySelector('.hex-input');
-        if (hexInput) hexInput.value = newColor;
+        if (hexInput) hexInput.value = newColor.replace('#', '');
     }
 
     // Find and update the color preview square that was clicked to open this picker
@@ -1284,7 +1301,7 @@ function attachColorPickerListeners(pickerId) {
         const handleHexInput = () => {
             let value = hexInput.value.trim();
 
-            // Add # if missing
+            // Always add # prefix (input doesn't contain it)
             if (value && !value.startsWith('#')) {
                 value = '#' + value;
             }
@@ -1311,6 +1328,52 @@ function attachColorPickerListeners(pickerId) {
                 }
             }
         };
+
+        // Filter out # characters from input
+        hexInput.addEventListener('input', (e) => {
+            // Remove any # characters
+            const cleaned = hexInput.value.replace(/#/g, '');
+            if (cleaned !== hexInput.value) {
+                hexInput.value = cleaned;
+            }
+
+            // Live update if valid
+            let value = cleaned.trim();
+            if (value && !value.startsWith('#')) {
+                value = '#' + value;
+            }
+
+            // Validate and update live if it's a complete hex code
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                const rgb = hexToRgb(value);
+                const hsb = rgbToHsb(rgb.r, rgb.g, rgb.b);
+
+                currentHue = hsb.h;
+                currentSat = hsb.s;
+                currentBrightness = hsb.b;
+
+                updateXYPadBackground(pickerId);
+                updateXYCursorPosition(pickerId);
+                updateHueThumbPosition(pickerId);
+                document.getElementById(`hueValue-${pickerId}`).textContent = Math.round(currentHue);
+
+                if (currentColorPickerCallback) {
+                    currentColorPickerCallback(value);
+                }
+            }
+        });
+
+        // Handle paste - strip # and update
+        hexInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            let pastedText = (e.clipboardData || window.clipboardData).getData('text').trim();
+
+            // Remove any # characters
+            pastedText = pastedText.replace(/#/g, '');
+
+            hexInput.value = pastedText;
+            hexInput.dispatchEvent(new Event('input'));
+        });
 
         // Update on Enter key
         hexInput.addEventListener('keydown', (e) => {
@@ -1984,7 +2047,7 @@ function extractGradientStopsInFrontmatter(gradientCSS) {
     return stops;
 }
 
-// Pinned colors are now handled by the <pinned-colors> web component
+// Pinned styles are now handled by the <pinned-styles> web component
 
 async function getPinnedGradientsData() {
     const stored = localStorage.getItem('websitetools-colors');
@@ -2038,7 +2101,7 @@ async function getPinnedGradientsData() {
     return gradients;
 }
 
-// Functions removed - now handled by <pinned-colors> web component
+// Functions removed - now handled by <pinned-styles> web component
 
 function applyPinnedColor(hex) {
     // If a color picker is open, apply the color to it
@@ -2276,10 +2339,11 @@ function setupDropTargetsForPinnedColors() {
 document.addEventListener('DOMContentLoaded', () => {
     loadFromLocalStorage();
     setupGradientStopDragHandlers();
-    // Pinned colors are rendered by the <pinned-colors> web component
+    // Pinned styles are rendered by the <pinned-styles> web component
 
     // Close color picker when clicking outside (but not when just releasing a drag)
-    document.addEventListener('mousedown', (e) => {
+    // Use 'click' instead of 'mousedown' so blur events fire first (allowing hex input to save)
+    document.addEventListener('click', (e) => {
         // Only close if we actually clicked outside, not if we're dragging
         if (currentPickerId && !isDraggingXY && !isDraggingHue) {
             if (!e.target.closest('.inline-color-picker') && !e.target.closest('.color-preview')) {

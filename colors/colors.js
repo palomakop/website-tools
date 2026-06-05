@@ -45,7 +45,7 @@ function saveToLocalStorage() {
     localStorage.setItem('websitetools-colors', JSON.stringify(data));
 
     // Dispatch event for frontmatter tool to listen to
-    window.dispatchEvent(new CustomEvent('pinnedColorsUpdated'));
+    window.dispatchEvent(new CustomEvent('pinnedStylesUpdated'));
 }
 
 // ============================================================================
@@ -687,8 +687,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadColorsFromJSON();
     renderAllColors();
 
-    // Listen for pinned colors updates from frontmatter tool
-    window.addEventListener('pinnedColorsUpdated', () => {
+    // Listen for pinned styles updates from frontmatter tool
+    window.addEventListener('pinnedStylesUpdated', () => {
         loadFromLocalStorage();
         renderAllColors();
     });
