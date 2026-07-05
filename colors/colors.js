@@ -78,7 +78,7 @@ async function loadFromURL() {
         const response = await fetch('https://palomakop.tv/colors.json', {
             method: 'GET',
             mode: 'cors',
-            cache: 'no-cache'
+            cache: 'reload'
         });
 
         if (!response.ok) {
