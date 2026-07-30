@@ -185,8 +185,8 @@ function hideRefreshButton() {
 function parseColorData(data) {
     const groups = [];
 
-    // Process both "css" and "frontmatter" top-level keys
-    ['css', 'frontmatter'].forEach(topLevel => {
+    // Process "custom", "css", and "frontmatter" top-level keys
+    ['custom', 'css', 'frontmatter'].forEach(topLevel => {
         if (!data[topLevel]) return;
 
         Object.keys(data[topLevel]).forEach(groupName => {
