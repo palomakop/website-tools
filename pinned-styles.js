@@ -81,7 +81,7 @@ class PinnedStyles extends HTMLElement {
     parseColorData(data) {
         const groups = [];
 
-        ['css', 'frontmatter'].forEach(topLevel => {
+        ['custom', 'css', 'frontmatter'].forEach(topLevel => {
             if (!data[topLevel]) return;
 
             Object.keys(data[topLevel]).forEach(groupName => {
